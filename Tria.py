@@ -18,6 +18,17 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 debug=logging.debug
 
+
+__author__      = "Pietro Dorighi"
+__copyright__   = "Copyright 2018 by Pietro Dorighi"
+__license__     = "MIT License"
+__version__     = "2.0"
+__maintainer__  = "Pietro Dorighi"
+__email__       = "dorighi@developer.org"
+__status__      = "development"
+__date__        = "10/01/2018"
+
+
 CAM_IMAGE = 'img/TXTCamImg.jpg'
 
 WLAN = '192.168.8.2'
@@ -480,7 +491,7 @@ while True:
 
 lamp.setLevel(Outmin)
 if (Robot):
-    -------------------- Inizio prima fase gioco--------------------------------------------------------------------------------------
+    #-------------------- Inizio prima fase gioco--------------------------------------------------------------------------------------
     for i in range(0,9):
         debug("Controllo Possibili Trie...")
         FPossibiliTria()
@@ -514,7 +525,7 @@ if (Robot):
 
 if (User):
     for i in range(0,9):
-        -------------------- Inizio prima fase gioco--------------------------------------------------------------------------------------
+        #-------------------- Inizio prima fase gioco--------------------------------------------------------------------------------------
         ValposUpdate()
         Controlli()
         debug("Controllo Possibili Trie...")
