@@ -269,33 +269,38 @@ def Strategia():
         Val[V[1]] == EMPTY or
         Val[V[2]] == EMPTY or
             Val[V[3]] == EMPTY):
-        N = random.choice(V)
-        while Val[N] != EMPTY:
-            N = random.choice(V)
-        fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-        catch()
-        fromto(scivoloPalline[0], scivoloPalline[1], Xpos[N], Ypos[N])
-        release()
-        Val[N] = ROBOT
-    else:
-        for i in QUADRATI:
-            for j in COLLEGAMENTI:
-                if Val[i] == EMPTY and Val[j] == EMPTY:
-                    if j not in V:
+        for j in POS_CENTRALI:
+            ritorno = True
+            for i in TRIA:
+                if j in i:
+                    if Val[i[0]] != 0 or Val[i[1]] != 0 or Val[i[2]] != 0:
+                        ritorno = False
+                        break
+            if ritorno:
+                fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
+                catch()
+                fromto(scivoloPalline[0], scivoloPalline[1], Xpos[j], Ypos[j])
+                release()
+                Val[j] = ROBOT
+                return
+    for i in QUADRATI:
+        for j in COLLEGAMENTI:
+            if Val[i] == EMPTY and Val[j] == EMPTY:
+                if j not in V:
+                    Val[i] = ROBOT
+                    Val[j] = ROBOT
+                    FPossibiliTria()
+                    Val[i] = EMPTY
+                    Val[j] = EMPTY
+                    if len(opt.PosSvolgiTria) > 1:
+                        fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
+                        catch()
+                        fromto(scivoloPalline[0], scivoloPalline[1],
+                               Xpos[i], Ypos[i])
+                        release()
                         Val[i] = ROBOT
-                        Val[j] = ROBOT
-                        FPossibiliTria()
-                        Val[i] = EMPTY
-                        Val[j] = EMPTY
-                        if len(opt.PosSvolgiTria) > 1:
-                            fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                            catch()
-                            fromto(scivoloPalline[0], scivoloPalline[1],
-                                   Xpos[i], Ypos[i])
-                            release()
-                            Val[i] = ROBOT
-                            opt.PosAttacco = [j]
-                            opt.AttaccoState = 1
+                        opt.PosAttacco = [j]
+                        opt.AttaccoState = 1
 
 
 def FPossibiliTria():
@@ -500,31 +505,35 @@ def Difesa():
 def TogliPallina():
     "Togliere pallina utente quando robot esegue tria."
     FPossibiliTria()
-    if opt.Priorita == BloccoTriaU:
-        fromto(opt.CurrentX, opt.CurrentY,
-               Xpos[opt.PosTogliPallina], Ypos[opt.PosTogliPallina])
-        catch()
-        fromto(Xpos[opt.PosTogliPallina], Ypos[opt.PosTogliPallina],
-               contenitorePVR[0], contenitorePVR[1])
-        release()
-        Val[opt.PosTogliPallina] = EMPTY
+    if len(opt.PosBloccoTriaU) > 1:
+        for i in range(0, 24):
+            if Val[i] == USER:
+                Val[i] = EMPTY
+                FPossibiliTria()
+                if len(opt.PosBloccoTriaU) == 0:
+                    fromto(opt.CurrentX, opt.CurrentY,
+                           Xpos[i], Ypos[i])
+                    catch()
+                    fromto(Xpos[i], Ypos[i],
+                           contenitorePVR[0], contenitorePVR[1])
+                    break
+                else:
+                    Val[i] = USER
     else:
-        contatore = -1
-        for i in Val:
-            contatore += 1
-            if i == 10:
+        for i in range(0, 24):
+            if Val[i] == 10:
                 fromto(
                     opt.CurrentX,
                     opt.CurrentY,
-                    Xpos[contatore],
-                    Ypos[contatore])
+                    Xpos[i],
+                    Ypos[i])
                 catch()
-                fromto(Xpos[contatore], Ypos[contatore],
+                fromto(Xpos[i], Ypos[i],
                        contenitorePVR[0], contenitorePVR[1])
-                release()
                 Val[contatore] = EMPTY
-                return
-        opt.Priorita = 3
+                break
+    release()
+    opt.Priorita = 3
 
 #-----INIZIO PROGRAMMA------------------------------------------------
 
