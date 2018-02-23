@@ -52,12 +52,10 @@ Ypos = [900, 900, 900, 1471, 1471, 1471, 2500, 2500, 2500,
         3926, 4747, 4747, 4747, 5531, 5531, 5531]
 
 # Coordinate posizioni immagine fotocamera
-XposIMG = [101, 156, 213, 121, 157, 195, 139, 157,
-           178, 101, 122, 139, 179, 198, 217, 139,
-           160, 180, 121, 162, 200, 101, 160, 223]
-YposIMG = [72, 70, 66, 87, 84, 83, 104, 104,
-           103, 124, 124, 123, 121, 119, 118, 140,
-           140, 138, 161, 160, 156, 182, 180, 176]
+XposIMG = [98, 153, 208, 117, 154, 192, 138, 157, 173, 99, 118,
+           136, 176, 195, 214, 137, 156, 177, 117, 159, 198, 98, 159, 222]
+YposIMG = [70, 67, 64, 86, 82, 81, 102, 103, 100, 122, 122, 121,
+           118, 116, 116, 139, 137, 136, 158, 157, 155, 180, 178, 172]
 
 # Valore posizione(0 = posizione vuota, 1 = pallina Robot, 10 = pallina User)
 EMPTY = 0
@@ -310,6 +308,7 @@ def FPossibiliTria():
     opt.PosSvolgiTria = []
     posEmpty = -1
     posUser = -1
+    pRobot = False
     for i in TRIA:
         t = []
         for j in i:
@@ -324,9 +323,8 @@ def FPossibiliTria():
             opt.PosBloccoTriaU.append(posEmpty)
             opt.PosTogliPallina = posUser
         elif sum(t) == 2:
-            opt.Priorita = SVOLGITRIA
             opt.PosSvolgiTria.append(posEmpty)
-            break
+            pRobot = True
         elif sum(t) == 30:
             if not opt.Controllo:
                 if(TRIA.index(i) not in opt.TrieUtente):
@@ -340,6 +338,8 @@ def FPossibiliTria():
                     ValposUpdate()
                     opt.TogliPallineR = False
                     FPossibiliTria()
+    if pRobot:
+        opt.Priorita = SVOLGITRIA
 
 
 def ControlloAttacco():
@@ -467,27 +467,27 @@ def ControlloDifesa():
                     if Val[a[i + 3]] == EMPTY:
                         Val[a[i + 3]] = USER
                         for j in range(0, 12):
-                            Val[a[j]] = USER
-                            FPossibiliTria()
-                            if len(opt.PosBloccoTriaU) > 1:
-                                opt.Priorita = DIFESA
-                                opt.PosDifesa = a[i + 3]
-                                break
-                            else:
+                            if Val[a[j]] == EMPTY:
+                                Val[a[j]] = USER
+                                FPossibiliTria()
                                 Val[a[j]] = EMPTY
+                                if len(opt.PosBloccoTriaU) > 1:
+                                    opt.Priorita = DIFESA
+                                    opt.PosDifesa = a[i + 3]
+                                    break
                         Val[a[i + 3]] = EMPTY
                 elif a[i] in [23, 20, 17, 2, 5, 8]:
                     if Val[a[i - 3]] == EMPTY:
                         Val[a[i - 3]] = USER
                         for j in range(0, 12):
-                            Val[a[j]] = USER
-                            FPossibiliTria()
-                            if len(opt.PosBloccoTriaU) > 1:
-                                opt.Priorita = DIFESA
-                                opt.PosDifesa = a[i - 3]
-                                break
-                            else:
+                            if Val[a[j]] == EMPTY:
+                                Val[a[j]] = USER
+                                FPossibiliTria()
                                 Val[a[j]] = EMPTY
+                                if len(opt.PosBloccoTriaU) > 1:
+                                    opt.Priorita = DIFESA
+                                    opt.PosDifesa = a[i - 3]
+                                    break
                         Val[a[i - 3]] = EMPTY
     opt.Controllo = False
 
@@ -530,7 +530,7 @@ def TogliPallina():
                 catch()
                 fromto(Xpos[i], Ypos[i],
                        contenitorePVR[0], contenitorePVR[1])
-                Val[contatore] = EMPTY
+                Val[i] = EMPTY
                 break
     release()
     opt.Priorita = 3
@@ -573,7 +573,7 @@ if (Robot):
             ControlloAttacco()
             if opt.Priorita != 3:
                 debug("Controllo Difesa...")
-                ControlloDifesa()
+                # ControlloDifesa()
         if opt.Priorita == DIFESA:
             debug("Difesa...")
             Difesa()
@@ -584,7 +584,7 @@ if (Robot):
         lamp.setLevel(OUTMAX)
         AttendUser()
         lamp.setLevel(OUTMIN)
-        time.sleep(0.5)
+        time.sleep(0.2)
         ValposUpdate()
         Controlli()
 
@@ -619,4 +619,4 @@ if (User):
         lamp.setLevel(OUTMAX)
         AttendUser()
         lamp.setLevel(OUTMIN)
-        time.sleep(0.5)
+        time.sleep(0.2)
