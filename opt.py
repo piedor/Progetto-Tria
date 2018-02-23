@@ -16,4 +16,3 @@ TogliPallineR = False
 TrieUtente = []
 PosAttacco = []                 # Posizione attacco
 PosTogliPallina = []            # Posizione togli pallina
-PPTU=[]

@@ -68,12 +68,12 @@ OUTMAX = 512                    # Uscita massima pwm output
 OUTMIN = 0                      # Uscita minima pwm output
 
 # Combinazioni possibili delle trie
-TRIA = [[0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [21, 22, 23], [18, 19, 20],
-        [15, 16, 17], [21, 9, 0], [18, 10, 3],
-        [15, 11, 6], [2, 14, 23], [5, 13, 20],
-        [8, 12, 17], [9, 10, 11], [16, 19, 22], [12, 13, 14],
-        [1, 4, 7]]
+TRIA = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+        21, 22, 23, 18, 19, 20,
+        15, 16, 17, 21, 9, 0, 18, 10, 3,
+        15, 11, 6, 2, 14, 23, 5, 13, 20,
+        8, 12, 17, 9, 10, 11, 16, 19, 22, 12, 13, 14,
+        1, 4, 7]
 
 ANGOLI = [0, 3, 6, 23, 20, 17, 21, 18, 15, 2, 5, 8]  # Posizioni angoli tria
 # Posizioni angoli quadrati tria
@@ -107,6 +107,16 @@ User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
 
 #------------INIZIO FORMALIZZAZIONE CLASSI------------------
+
+
+def SplitList(L, step):
+    "Divisione in sublists dato il numero di step di una lista"
+    return[L[i:i + step]for i in range(0, len(L), step)]
+
+
+def GetItems(V, I):
+    "Elementi in V dato l'indice I"
+    return[V[i]for i in I]
 
 
 def reset():
@@ -200,6 +210,7 @@ def ValposReset():
                 blue = blue + b
         ValposCamera[i] = blue
     opt.ValposOld = Val
+    TRIA = SplitList(TRIA, 3)
 
 
 def ValposUpdate():
@@ -306,29 +317,28 @@ def FPossibiliTria():
     opt.Priorita = EMPTY
     opt.PosBloccoTriaU = []
     opt.PosSvolgiTria = []
+    opt.PosTogliPallina = []
     posEmpty = -1
     posUser = -1
     pRobot = False
+    s = 0
     for i in TRIA:
-        t = []
-        for j in i:
-            k = Val[j]
-            t.append(k)
-            if k == EMPTY:
-                posEmpty = j
-            if k == USER:
-                posUser = j
-        if sum(t) == 20:
+        s = GetItems(Val, i)
+        if 0 in s:
+            posEmpty = i[s.index(0)]
+        if 1 in s:
+            posUser = i[s.index(1)]
+        if set(s) == set((0, 10, 10)):
             opt.Priorita = BLOCCOTRIA
             opt.PosBloccoTriaU.append(posEmpty)
-            opt.PosTogliPallina = posUser
-        elif sum(t) == 2:
+            opt.PosTogliPallina.append(posUser)
+        elif set(s) == set((0, 1, 1)):
             opt.PosSvolgiTria.append(posEmpty)
             pRobot = True
-        elif sum(t) == 30:
+        elif set(s) == set((10, 10, 10)):
             if not opt.Controllo:
-                if(TRIA.index(i) not in opt.TrieUtente):
-                    opt.TrieUtente.append(TRIA.index(i))
+                if(i not in opt.TrieUtente):
+                    opt.TrieUtente.append(i)
                     opt.TogliPallineR = True
                     print("Hai formalizzato una Tria.")
                     print("Puoi eliminare una pallina avversaria!")
@@ -516,24 +526,40 @@ def TogliPallina():
                     catch()
                     fromto(Xpos[i], Ypos[i],
                            contenitorePVR[0], contenitorePVR[1])
-                    break
+                    release()
+                    return
                 else:
                     Val[i] = USER
-    else:
-        for i in range(0, 24):
-            if Val[i] == 10:
-                fromto(
-                    opt.CurrentX,
-                    opt.CurrentY,
-                    Xpos[i],
-                    Ypos[i])
+    for i in range(0, 23):
+        if Val[i] == EMPTY:
+            Val[i] = USER
+            FPossibiliTria()
+            Val[i] = EMPTY
+            if len(opt.PosTogliPallina) > 0:
+                fromto(opt.CurrentX,
+                       opt.CurrentY,
+                       Xpos[opt.PosTogliPallina[0]],
+                       Ypos[opt.PosTogliPallina[0]])
                 catch()
-                fromto(Xpos[i], Ypos[i],
-                       contenitorePVR[0], contenitorePVR[1])
-                Val[i] = EMPTY
-                break
-    release()
-    opt.Priorita = 3
+                fromto(Xpos[opt.PosTogliPallina[0]],
+                       Ypos[opt.PosTogliPallina[0]],
+                       contenitorePVR[0],
+                       contenitorePVR[1])
+                release()
+                return
+    for i in range(0, 24):
+        if Val[i] == 10:
+            fromto(
+                opt.CurrentX,
+                opt.CurrentY,
+                Xpos[i],
+                Ypos[i])
+            catch()
+            fromto(Xpos[i], Ypos[i],
+                   contenitorePVR[0], contenitorePVR[1])
+            Val[i] = EMPTY
+            release()
+            return
 
 #-----INIZIO PROGRAMMA------------------------------------------------
 
@@ -568,6 +594,7 @@ if (Robot):
                 debug("Svolgitura Tria...")
                 SvolgiTria()
                 TogliPallina()
+                opt.Priorita = 3
         else:
             debug("Controllo Attacco")
             ControlloAttacco()
@@ -603,6 +630,7 @@ if (User):
                 debug("Svolgitura Tria...")
                 SvolgiTria()
                 TogliPallina()
+                opt.Priorita = 3
         else:
             debug("Controllo Attacco")
             ControlloAttacco()
