@@ -31,7 +31,7 @@ CAM_IMAGE = 'img/TXTCamImg.jpg'
 
 WLAN = '192.168.8.2'
 USB = '192.168.7.2'
-txt = ftrobopy.ftrobopy(host=USB, port=65000)  # Connessione al controller
+txt = ftrobopy.ftrobopy('auto')  # Connessione al controller
 
 M = [txt.C_MOTOR, txt.C_MOTOR, txt.C_MOTOR, txt.C_OUTPUT]
 
@@ -196,6 +196,7 @@ def fromto(x1, y1, x2, y2):
 
 
 def ValposReset():
+    global TRIA
     "Rilevamento somme blu posizioni fotocamera all'inizio."
     for i in range(0, 50):
         frameCamera = txt.getCameraFrame()
@@ -325,17 +326,17 @@ def FPossibiliTria():
     for i in TRIA:
         s = GetItems(Val, i)
         if 0 in s:
-            posEmpty = i[s.index(0)]
+            print("0: "),i[s.index(0)]
         if 1 in s:
-            posUser = i[s.index(1)]
-        if set(s) == set((0, 10, 10)):
+            print("1: "),i[s.index(1)]
+        if sum(s) == 20:
             opt.Priorita = BLOCCOTRIA
             opt.PosBloccoTriaU.append(posEmpty)
             opt.PosTogliPallina.append(posUser)
-        elif set(s) == set((0, 1, 1)):
+        elif sum(s) == 2:
             opt.PosSvolgiTria.append(posEmpty)
             pRobot = True
-        elif set(s) == set((10, 10, 10)):
+        elif sum(s) == 30:
             if not opt.Controllo:
                 if(i not in opt.TrieUtente):
                     opt.TrieUtente.append(i)
