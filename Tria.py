@@ -52,10 +52,10 @@ Ypos = [900, 900, 900, 1471, 1471, 1471, 2500, 2500, 2500,
         3926, 4747, 4747, 4747, 5531, 5531, 5531]
 
 # Coordinate posizioni immagine fotocamera
-XposIMG = [98, 153, 208, 117, 154, 192, 138, 157, 173, 99, 118,
-           136, 176, 195, 214, 137, 156, 177, 117, 159, 198, 98, 159, 222]
-YposIMG = [70, 67, 64, 86, 82, 81, 102, 103, 100, 122, 122, 121,
-           118, 116, 116, 139, 137, 136, 158, 157, 155, 180, 178, 172]
+XposIMG = [106, 157, 213, 121, 158, 196, 143, 162, 182, 103, 120, 142, 181,
+           201, 220, 142, 163, 180, 125, 163, 202, 103, 164, 223]
+YposIMG = [69, 67, 64, 84, 81, 81, 102, 102, 102, 121, 122, 120, 117, 115,
+           116, 138, 138, 136, 158, 155, 153, 177, 176, 172]
 
 # Valore posizione(0 = posizione vuota, 1 = pallina Robot, 10 = pallina User)
 EMPTY = 0
@@ -275,6 +275,7 @@ def Strategia():
     "Strategia robot."
     opt.PosAttacco = []
     V = POS_CENTRALI
+    ritorno = True
     if (Val[V[0]] == EMPTY or
         Val[V[1]] == EMPTY or
         Val[V[2]] == EMPTY or
@@ -292,25 +293,27 @@ def Strategia():
                 fromto(scivoloPalline[0], scivoloPalline[1], Xpos[j], Ypos[j])
                 release()
                 Val[j] = ROBOT
-                return
-    for i in QUADRATI:
-        for j in COLLEGAMENTI:
-            if Val[i] == EMPTY and Val[j] == EMPTY:
-                if j not in V:
-                    Val[i] = ROBOT
-                    Val[j] = ROBOT
-                    FPossibiliTria()
-                    Val[i] = EMPTY
-                    Val[j] = EMPTY
-                    if len(opt.PosSvolgiTria) > 1:
-                        fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                        catch()
-                        fromto(scivoloPalline[0], scivoloPalline[1],
-                               Xpos[i], Ypos[i])
-                        release()
+                break
+    if not ritorno:
+        for i in QUADRATI:
+            for j in COLLEGAMENTI:
+                if Val[i] == EMPTY and Val[j] == EMPTY:
+                    if j not in V:
                         Val[i] = ROBOT
-                        opt.PosAttacco = [j]
-                        opt.AttaccoState = 1
+                        Val[j] = ROBOT
+                        FPossibiliTria()
+                        Val[i] = EMPTY
+                        Val[j] = EMPTY
+                        if len(opt.PosSvolgiTria) > 1:
+                            fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
+                            catch()
+                            fromto(scivoloPalline[0], scivoloPalline[1],
+                                   Xpos[i], Ypos[i])
+                            release()
+                            Val[i] = ROBOT
+                            opt.PosAttacco = [j]
+                            opt.AttaccoState = 1
+                            return
 
 
 def FPossibiliTria():
@@ -326,9 +329,9 @@ def FPossibiliTria():
     for i in TRIA:
         s = GetItems(Val, i)
         if 0 in s:
-            print("0: "),i[s.index(0)]
-        if 1 in s:
-            print("1: "),i[s.index(1)]
+            posEmpty = i[s.index(0)]
+        if 10 in s:
+            posUser = i[s.index(10)]
         if sum(s) == 20:
             opt.Priorita = BLOCCOTRIA
             opt.PosBloccoTriaU.append(posEmpty)
@@ -527,7 +530,7 @@ def TogliPallina():
                     catch()
                     fromto(Xpos[i], Ypos[i],
                            contenitorePVR[0], contenitorePVR[1])
-                    release()
+                    ventosa.setLevel(OUTMIN)
                     return
                 else:
                     Val[i] = USER
@@ -536,7 +539,7 @@ def TogliPallina():
             Val[i] = USER
             FPossibiliTria()
             Val[i] = EMPTY
-            if len(opt.PosTogliPallina) > 0:
+            if len(opt.PosBloccoTriaU) > 1:
                 fromto(opt.CurrentX,
                        opt.CurrentY,
                        Xpos[opt.PosTogliPallina[0]],
@@ -546,7 +549,7 @@ def TogliPallina():
                        Ypos[opt.PosTogliPallina[0]],
                        contenitorePVR[0],
                        contenitorePVR[1])
-                release()
+                ventosa.setLevel(OUTMIN)
                 return
     for i in range(0, 24):
         if Val[i] == 10:
@@ -559,7 +562,7 @@ def TogliPallina():
             fromto(Xpos[i], Ypos[i],
                    contenitorePVR[0], contenitorePVR[1])
             Val[i] = EMPTY
-            release()
+            ventosa.setLevel(OUTMIN)
             return
 
 #-----INIZIO PROGRAMMA------------------------------------------------
@@ -601,7 +604,7 @@ if (Robot):
             ControlloAttacco()
             if opt.Priorita != 3:
                 debug("Controllo Difesa...")
-                # ControlloDifesa()
+                ControlloDifesa()
         if opt.Priorita == DIFESA:
             debug("Difesa...")
             Difesa()
