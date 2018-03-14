@@ -104,7 +104,7 @@ Val = [0] * 24
 ValposCamera = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
 
 User = False                    # Boolean inizio utente
-Robot = False                   # Boolean inizio robo
+Robot = False                   # Boolean inizio robot
 
 #------------INIZIO FORMALIZZAZIONE CLASSI------------------
 
