@@ -361,16 +361,6 @@ def FPossibiliTria():
                     AttendUser()
                     opt.TogliPallineR = True
                     ValposUpdate()
-					for i1, i2 in zip(opt.ValposOld, Val):
-						ContatorePos = ContatorePos + 1
-						if i1==1:
-							if i2==0:
-								for j in opt.TrieUtente:
-									while ContatorePos in j:
-										print("errore non puoi rimuovere una pallina del robot che fa parte di una tria")	
-										Val[ContatorePos]=1
-										AttendUser()
-										ValposUpdate()
                     opt.TogliPallineR = False
                     FPossibiliTria()
                     return
