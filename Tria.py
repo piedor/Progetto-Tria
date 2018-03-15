@@ -361,6 +361,16 @@ def FPossibiliTria():
                     AttendUser()
                     opt.TogliPallineR = True
                     ValposUpdate()
+					for i1, i2 in zip(opt.ValposOld, Val):
+						ContatorePos = ContatorePos + 1
+						if i1==1:
+							if i2==0:
+								for j in opt.TrieUtente:
+									while ContatorePos in j:
+										print("errore non puoi rimuovere una pallina del robot che fa parte di una tria")	
+										Val[ContatorePos]=1
+										AttendUser()
+										ValposUpdate()
                     opt.TogliPallineR = False
                     FPossibiliTria()
                     return
@@ -530,55 +540,67 @@ def Difesa():
 
 def TogliPallina():
     "Togliere pallina utente quando robot esegue tria."
+    flag=0
     opt.Controllo=True
     FPossibiliTria()
     if len(opt.PosBloccoTriaU) > 1:
         for i in range(0, 24):
-            if Val[i] == USER:
-                Val[i] = EMPTY
-                FPossibiliTria()
-                if len(opt.PosBloccoTriaU) == 0:
-                    fromto(opt.CurrentX, opt.CurrentY,
-                           Xpos[i], Ypos[i])
-                    catch()
-                    fromto(Xpos[i], Ypos[i],
-                           contenitorePVR[0], contenitorePVR[1])
-                    ventosa.setLevel(OUTMIN)
-                    return
-                else:
-                    Val[i] = USER
+            for j in opt.TrieUtente:
+                if i in j:
+                    flag=1
+            if flag==0:
+                if Val[i] == USER:
+                    Val[i] = EMPTY
+                    FPossibiliTria()
+                    if len(opt.PosBloccoTriaU) == 0:
+                        fromto(opt.CurrentX, opt.CurrentY,
+                             Xpos[i], Ypos[i])
+                        catch()
+                        fromto(Xpos[i], Ypos[i],
+                             contenitorePVR[0], contenitorePVR[1])
+                        release()
+                        return
+                    else:
+                        Val[i] = USER
     for i in range(0, 24):
         if Val[i] == EMPTY:
             Val[i] = USER
             FPossibiliTria()
             Val[i] = EMPTY
-            if len(opt.PosBloccoTriaU) > 1:
+        for j in opt.TrieUtente:
+            if i in j:
+                flag=1
+        if flag==0:
+            if len(opt.PosTogliPallina) > 0:
                 fromto(opt.CurrentX,
-                       opt.CurrentY,
-                       Xpos[opt.PosTogliPallina[0]],
-                       Ypos[opt.PosTogliPallina[0]])
+                     opt.CurrentY,
+                     Xpos[opt.PosTogliPallina[0]],
+                     Ypos[opt.PosTogliPallina[0]])
                 catch()
                 fromto(Xpos[opt.PosTogliPallina[0]],
-                       Ypos[opt.PosTogliPallina[0]],
-                       contenitorePVR[0],
-                       contenitorePVR[1])
-                ventosa.setLevel(OUTMIN)
-                Val[opt.PosTogliPallina[0]]=EMPTY
+                     Ypos[opt.PosTogliPallina[0]],
+                     contenitorePVR[0],
+                     contenitorePVR[1])
+                release()
                 return
     for i in range(0, 24):
-        if Val[i] == 10:
-            fromto(
-                opt.CurrentX,
-                opt.CurrentY,
-                Xpos[i],
-                Ypos[i])
-            catch()
-            fromto(Xpos[i], Ypos[i],
-                   contenitorePVR[0], contenitorePVR[1])
-            Val[i] = EMPTY
-            ventosa.setLevel(OUTMIN)
-            return
-
+        for j in opt.TrieUtente:
+            if i in j:
+                flag=1
+        if flag==0:
+            if Val[i] == 10:
+                fromto(
+                  opt.CurrentX,
+                  opt.CurrentY,
+                  Xpos[i],
+                  Ypos[i])
+                catch()
+                fromto(Xpos[i], Ypos[i],
+                     contenitorePVR[0], contenitorePVR[1])
+                Val[i] = EMPTY
+                release()
+                return
+        
 
 def PosSposta(pos):
     "Procedura data una posizione rilascia le posizioni dove può spostarsi VUOTE"
