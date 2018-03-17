@@ -176,7 +176,7 @@ def release():
 
 def fromto(x1, y1, x2, y2):
     "Spostamento da (x1, y1) a (x2, y2)."
-    start=time.time()
+    start = time.time()
     opt.CurrentX = x2
     opt.CurrentY = y2
     diffx = x2 - x1
@@ -198,7 +198,7 @@ def fromto(x1, y1, x2, y2):
         asse_y.setDistance(disty)
         txt.incrMotorCmdId(0)
     while not(asse_y.finished() and asse_x.finished()):
-        if time.time()-start >= 30:
+        if time.time() - start >= 30:
             return
         txt.updateWait()
 
@@ -243,8 +243,8 @@ def ValposUpdate():
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
-        if((blue - ValposCamera[i] > -2500) and (blue - ValposCamera[i] < 2000)):
-            if(Val[i] == ROBOT):
+        if blue - ValposCamera[i] < 2000:
+            if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     Val[i] = EMPTY
                     print("pallina Robot rimossa dalla posizione "), i
@@ -257,7 +257,7 @@ def ValposUpdate():
                     ValposUpdate()
 
 
-def Lampeggio(seconds,vel):
+def Lampeggio(seconds, vel):
     "Lampeggio lampadina dati i secondi."
     start = time.time()
     while True:
@@ -349,9 +349,9 @@ def FPossibiliTria():
         elif sum(s) == 3:
             if i not in opt.TrieRobot:
                 opt.TrieRobot.append(i)
-                Lampeggio(1,0.002)
+                Lampeggio(1, 0.002)
                 TogliPallina()
-                opt.Controllo=False
+                opt.Controllo = False
                 return
         elif sum(s) == 30:
             if not opt.Controllo:
@@ -359,7 +359,7 @@ def FPossibiliTria():
                     opt.TrieUtente.append(i)
                     print("Hai formalizzato una Tria.")
                     print("Puoi eliminare una pallina avversaria!")
-                    Lampeggio(1,0.02)
+                    Lampeggio(1, 0.02)
                     AttendUser()
                     opt.TogliPallineR = True
                     ValposUpdate()
@@ -400,17 +400,21 @@ def Attacco():
     if opt.AttaccoState == 0:
         Strategia()
     else:
-        Val[p[0]] = ROBOT
-        FPossibiliTria()
-        if opt.PosSvolgiTria > 1:
-            fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-            catch()
-            fromto(scivoloPalline[0], scivoloPalline[1],
-                   Xpos[p[0]], Ypos[p[0]])
-            release()
-            opt.AttaccoState = 0
+        if p[0] == EMPTY:
+            Val[p[0]] = ROBOT
+            FPossibiliTria()
+            if opt.PosSvolgiTria > 1:
+                fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
+                catch()
+                fromto(scivoloPalline[0], scivoloPalline[1],
+                       Xpos[p[0]], Ypos[p[0]])
+                release()
+                opt.AttaccoState = 0
+            else:
+                Val[p[0]] = EMPTY
+                opt.AttaccoState = 0
+                Strategia()
         else:
-            Val[p[0]] = EMPTY
             opt.AttaccoState = 0
             Strategia()
 
@@ -532,28 +536,29 @@ def Difesa():
 
 def TogliPallina():
     "Togliere pallina utente quando robot esegue tria."
-    flag=0
-    opt.Controllo=True
+    flag = 0
+    opt.Controllo = True
     FPossibiliTria()
     if len(opt.PosBloccoTriaU) > 1:
         for i in range(0, 24):
             for j in opt.TrieUtente:
                 if i in j:
-                    flag=1
-            if flag==0:
+                    flag = 1
+            if flag == 0:
                 if Val[i] == USER:
                     Val[i] = EMPTY
                     FPossibiliTria()
+                    Val[i] = USER
                     if len(opt.PosBloccoTriaU) == 0:
                         fromto(opt.CurrentX, opt.CurrentY,
-                             Xpos[i], Ypos[i])
+                               Xpos[i], Ypos[i])
                         catch()
                         fromto(Xpos[i], Ypos[i],
-                             contenitorePVR[0], contenitorePVR[1])
+                               contenitorePVR[0], contenitorePVR[1])
+                        Val[i] = EMPTY
                         ventosa.setLevel(OUTMIN)
                         return
-                    else:
-                        Val[i] = USER
+
     for i in range(0, 24):
         if Val[i] == EMPTY:
             Val[i] = USER
@@ -561,68 +566,69 @@ def TogliPallina():
             Val[i] = EMPTY
         for j in opt.TrieUtente:
             if i in j:
-                flag=1
-        if flag==0:
+                flag = 1
+        if flag == 0:
             if len(opt.PosTogliPallina) > 0:
                 fromto(opt.CurrentX,
-                     opt.CurrentY,
-                     Xpos[opt.PosTogliPallina[0]],
-                     Ypos[opt.PosTogliPallina[0]])
+                       opt.CurrentY,
+                       Xpos[opt.PosTogliPallina[0]],
+                       Ypos[opt.PosTogliPallina[0]])
                 catch()
                 fromto(Xpos[opt.PosTogliPallina[0]],
-                     Ypos[opt.PosTogliPallina[0]],
-                     contenitorePVR[0],
-                     contenitorePVR[1])
+                       Ypos[opt.PosTogliPallina[0]],
+                       contenitorePVR[0],
+                       contenitorePVR[1])
                 ventosa.setLevel(OUTMIN)
                 return
     for i in range(0, 24):
         for j in opt.TrieUtente:
             if i in j:
-                flag=1
-        if flag==0:
+                flag = 1
+        if flag == 0:
             if Val[i] == 10:
                 fromto(
-                  opt.CurrentX,
-                  opt.CurrentY,
-                  Xpos[i],
-                  Ypos[i])
+                    opt.CurrentX,
+                    opt.CurrentY,
+                    Xpos[i],
+                    Ypos[i])
                 catch()
                 fromto(Xpos[i], Ypos[i],
-                     contenitorePVR[0], contenitorePVR[1])
+                       contenitorePVR[0], contenitorePVR[1])
                 Val[i] = EMPTY
                 ventosa.setLevel(OUTMIN)
                 return
 
 
 def Controlli2F():
-    Pos1=-1
-    Pos2=-1
+    Pos1 = -1
+    Pos2 = -1
+    ContatorePos = 0
     for i1, i2 in zip(opt.ValposOld, Val):
         ContatorePos = ContatorePos + 1
-        if Val[i1]==10:
-            if Val[i2]==0:
-                Pos1=ContatorePos
-        if Val[i1]==0:
-            if Val[i2]==10:
-                Pos2=ContatorePos
+        if Val[i1] == 10:
+            if Val[i2] == 0:
+                Pos1 = ContatorePos
+        if Val[i1] == 0:
+            if Val[i2] == 10:
+                Pos2 = ContatorePos
 
     while Pos2 not in opt.PosSpostaU[Pos1]:
         print("""
         MOSSA UTENTE NON VALIDA!!!
-        NON PUOI SPOSTARE LA PALLINA NELLA POSIZIONE """,Pos1,""" ALLA POSIZIONE """,
-        Pos2)
-        Val[Pos1]=10
-        Val[Pos2]=0
+        NON PUOI SPOSTARE LA PALLINA NELLA POSIZIONE """, Pos1, """ ALLA POSIZIONE """,
+              Pos2)
+        Val[Pos1] = 10
+        Val[Pos2] = 0
         AttendUser()
         ValposUpdate()
         for i1, i2 in zip(opt.ValposOld, Val):
             ContatorePos = ContatorePos + 1
-            if Val[i1]==10:
-                if Val[i2]==0:
-                    Pos1=ContatorePos
-            if Val[i1]==0:
-                if Val[i2]==10:
-                    Pos2=ContatorePos
+            if Val[i1] == 10:
+                if Val[i2] == 0:
+                    Pos1 = ContatorePos
+            if Val[i1] == 0:
+                if Val[i2] == 10:
+                    Pos2 = ContatorePos
 
 
 def PosSposta(pos):
@@ -714,7 +720,7 @@ def Spostamento():
 
 reset()
 txt.startCameraOnline()
-Lampeggio(2.5,0.2)
+Lampeggio(2.5, 0.2)
 ValposReset()
 lamp.setLevel(OUTMAX)
 User = False
@@ -784,7 +790,7 @@ if (Robot):
 if (User):
     for i in range(0, 9):
         #-------------------- Inizio prima fase gioco-----------------
-        if i==0:
+        if i == 0:
             ValposUpdate()
         else:
             debug("Attend Utente...")
