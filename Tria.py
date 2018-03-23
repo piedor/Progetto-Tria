@@ -246,8 +246,20 @@ def ValposUpdate():
         if blue - ValposCamera[i] < 2000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
-                    Val[i] = EMPTY
-                    print("pallina Robot rimossa dalla posizione "), i
+                    flag=0
+                    for j in opt.TrieRobot:
+                        if i in j:
+                            flag = 1
+                    if flag==1:
+                        print("""\
+                        MOSSA UTENTE NON VALIDA!!!
+                        NON PUOI TOGLIERE UNA PALLINA DA UNA TRIA DEL ROBOT.
+                        RIMETTI A POSTO!""")
+                        AttendUser()
+                        ValposUpdate()
+                    else:
+                        Val[i] = EMPTY
+                        print("pallina Robot rimossa dalla posizione "), i
                 else:
                     print("""\
                     MOSSA UTENTE NON VALIDA!!!
@@ -574,6 +586,7 @@ def TogliPallina():
                        Xpos[opt.PosTogliPallina[0]],
                        Ypos[opt.PosTogliPallina[0]])
                 catch()
+                Val[opt.PosTogliPallina[0]] = EMPTY
                 fromto(Xpos[opt.PosTogliPallina[0]],
                        Ypos[opt.PosTogliPallina[0]],
                        contenitorePVR[0],
