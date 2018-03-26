@@ -104,7 +104,9 @@ input_finemossa = txt.input(7)
 input_InizioR = txt.input(8)
 
 Val = [0] * 24
-ValposCamera = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
+ValposCameraB = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
+ValposCameraG = [0] * 24  # Valori posizioni fotocamera rilevamento somma verde
+ValposCameraR = [0] * 24  # Valori posizioni fotocamera rilevamento somma rosso
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
@@ -213,11 +215,17 @@ def ValposReset():
     img = cv2.imread(CAM_IMAGE, 1)
     for i in range(0, 24):
         blue = 0
+        green = 0
+        red = 0
         for j in range(0, 15):
             for k in range(0, 15):
-                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
-                blue = blue + b
-        ValposCamera[i] = blue
+                b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
+                blue += b
+                green += g
+                red += r
+        ValposCameraB[i] = blue
+        ValposCameraG[i] = green
+        ValposCameraR[i] = red
     opt.ValposOld = Val
     TRIA = SplitList(TRIA, 3)
 
@@ -238,19 +246,25 @@ def ValposUpdate():
             for k in range(0, 15):
                 b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue = blue + b
-        if blue - ValposCamera[i] > 3000:
+        if blue - ValposCameraB[i] > 3000:
             if Val[i] == EMPTY:
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
-        if blue - ValposCamera[i] < 2000:
+        if abs(
+                blue -
+                ValposCameraB[i]) < 2000 and abs(
+                blue -
+                ValposCameraG[i]) < 2000 and abs(
+                blue -
+                ValposCameraR[i]) < 2000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
-                    flag=0
+                    flag = 0
                     for j in opt.TrieRobot:
                         if i in j:
                             flag = 1
-                    if flag==1:
+                    if flag == 1:
                         print("""\
                         MOSSA UTENTE NON VALIDA!!!
                         NON PUOI TOGLIERE UNA PALLINA DA UNA TRIA DEL ROBOT.
