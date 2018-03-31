@@ -31,6 +31,7 @@ CAM_IMAGE = 'img/TXTCamImg.jpg'
 
 WLAN = '192.168.8.2'
 USB = '192.168.7.2'
+
 txt = ftrobopy.ftrobopy('auto')  # Connessione al controller
 
 M = [txt.C_MOTOR, txt.C_MOTOR, txt.C_MOTOR, txt.C_OUTPUT]
@@ -242,10 +243,14 @@ def ValposUpdate():
         opt.ValposOld = Val
     for i in range(0, 24):
         blue = 0
+        green =0
+        red=0
         for j in range(0, 15):
             for k in range(0, 15):
-                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
-                blue = blue + b
+                b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
+                blue += b
+                green += g
+                red += r
         if blue - ValposCameraB[i] > 3000:
             if Val[i] == EMPTY:
                 Val[i] = USER
@@ -254,9 +259,9 @@ def ValposUpdate():
         if abs(
                 blue -
                 ValposCameraB[i]) < 2000 and abs(
-                blue -
+                green -
                 ValposCameraG[i]) < 2000 and abs(
-                blue -
+                red -
                 ValposCameraR[i]) < 2000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
@@ -626,36 +631,36 @@ def TogliPallina():
                 return
 
 
-def Controlli2F():
-    Pos1 = -1
-    Pos2 = -1
-    ContatorePos = 0
-    for i1, i2 in zip(opt.ValposOld, Val):
-        ContatorePos = ContatorePos + 1
-        if Val[i1] == 10:
-            if Val[i2] == 0:
-                Pos1 = ContatorePos
-        if Val[i1] == 0:
-            if Val[i2] == 10:
-                Pos2 = ContatorePos
-
-    while Pos2 not in opt.PosSpostaU[Pos1]:
-        print("""
-        MOSSA UTENTE NON VALIDA!!!
-        NON PUOI SPOSTARE LA PALLINA NELLA POSIZIONE """, Pos1, """ ALLA POSIZIONE """,
-              Pos2)
-        Val[Pos1] = 10
-        Val[Pos2] = 0
-        AttendUser()
-        ValposUpdate()
-        for i1, i2 in zip(opt.ValposOld, Val):
-            ContatorePos = ContatorePos + 1
-            if Val[i1] == 10:
-                if Val[i2] == 0:
-                    Pos1 = ContatorePos
-            if Val[i1] == 0:
-                if Val[i2] == 10:
-                    Pos2 = ContatorePos
+# def Controlli2F():
+#     Pos1 = -1
+#     Pos2 = -1
+#     ContatorePos = 0
+#     for i1, i2 in zip(opt.ValposOld, Val):
+#         ContatorePos = ContatorePos + 1
+#         if Val[i1] == 10:
+#             if Val[i2] == 0:
+#                 Pos1 = ContatorePos
+#         if Val[i1] == 0:
+#             if Val[i2] == 10:
+#                 Pos2 = ContatorePos
+#
+#     while Pos2 not in opt.PosSpostaU[Pos1]:
+#         print("""
+#         MOSSA UTENTE NON VALIDA!!!
+#         NON PUOI SPOSTARE LA PALLINA NELLA POSIZIONE """, Pos1, """ ALLA POSIZIONE """,
+#               Pos2)
+#         Val[Pos1] = 10
+#         Val[Pos2] = 0
+#         AttendUser()
+#         ValposUpdate()
+#         for i1, i2 in zip(opt.ValposOld, Val):
+#             ContatorePos = ContatorePos + 1
+#             if Val[i1] == 10:
+#                 if Val[i2] == 0:
+#                     Pos1 = ContatorePos
+#             if Val[i1] == 0:
+#                 if Val[i2] == 10:
+#                     Pos2 = ContatorePos
 
 
 def PosSposta(pos):
@@ -716,25 +721,29 @@ def Spostamento():
     PosSpostaUpdate()
     FPossibiliTria()
     if opt.Priorita == SVOLGITRIA:
-        if opt.PosSvolgiTria in opt.PosSpostaR:
-            Pos = TrovaPosSposta(opt.PosSvolgiTria[0])
-            fromto(0, 0, Xpos[Pos], Ypos[Pos])
-            catch()
-            fromto(Xpos[Pos],
-                   Ypos[Pos],
-                   Xpos[opt.PosSvolgiTria[0]],
-                   Ypos[opt.PosSvolgiTria[0]])
-            release()
+        for i in opt.PosSvolgiTria:
+            if i in opt.PosSpostaR:
+                Pos = TrovaPosSposta(i)
+                fromto(0, 0, Xpos[Pos], Ypos[Pos])
+                catch()
+                fromto(Xpos[Pos],
+                       Ypos[Pos],
+                       Xpos[i],
+                       Ypos[i])
+                release()
+                return
     elif opt.Priorita == BLOCCOTRIA:
-        if opt.PosBloccoTriaU in opt.PosSpostaR:
-            Pos = TrovaPosSposta(opt.PosBloccoTriaU)
-            fromto(0, 0, Xpos[Pos], Ypos[Pos])
-            catch()
-            fromto(Xpos[Pos],
-                   Ypos[Pos],
-                   Xpos[opt.PosBloccoTriaU[0]],
-                   Ypos[opt.PosBloccoTriaU[0]])
-            release()
+        for i in opt.PosBloccoTriaU:
+            if i in opt.PosSpostaR:
+                Pos = TrovaPosSposta(opt.PosBloccoTriaU)
+                fromto(0, 0, Xpos[Pos], Ypos[Pos])
+                catch()
+                fromto(Xpos[Pos],
+                       Ypos[Pos],
+                       Xpos[i],
+                       Ypos[i])
+                release()
+                return
     else:
         for i in opt.PosSpostaR:
             Pos = TrovaPosSposta(i)
@@ -749,6 +758,9 @@ reset()
 txt.startCameraOnline()
 Lampeggio(2.5, 0.2)
 ValposReset()
+f=open("data.txt","w")
+f.write("False")
+f.close()
 lamp.setLevel(OUTMAX)
 User = False
 Robot = False
@@ -796,22 +808,19 @@ if (Robot):
         Controlli()
     #------------- Inizio seconda parte gioco---------------
 
+    f=open("data.txt","w")
+    f.write("True")
+    f.close()
     while not Fine:
         print("___2 parte___")
         Spostamento()
         FPossibiliTria()
         reset()
-        if len(opt.PosSpostaU) == 0 or Val.count(10) == 3:
-            Fine = True
-            print("Ha vinto il robot")
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
-        Controlli2F()
+        # Controlli2F()
         FPossibiliTria()
-        if len(opt.PosSpostaR) == 0 or Val.count(1) == 3:
-            Fine = True
-            print("Hai vinto!!")
 
 
 if (User):
@@ -850,19 +859,16 @@ if (User):
         reset()
     #------------- Inizio seconda parte gioco---------------
 
+    f=open("data.txt","w")
+    f.write("True")
+    f.close()
     while not Fine:
         print("___2 parte___")
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
-        Controlli2F()
+        # Controlli2F()
         FPossibiliTria()
-        if len(opt.PosSpostaR) == 0 or Val.count(1) == 3:
-            Fine = True
-            print("Hai vinto!!")
         Spostamento()
         FPossibiliTria()
         reset()
-        if len(opt.PosSpostaU) == 0 or Val.count(10) == 3:
-            Fine = True
-            print("Ha vinto il robot")
