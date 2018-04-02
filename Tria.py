@@ -13,6 +13,7 @@ import random
 import cv2
 import logging
 import opt
+import thread
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -111,6 +112,7 @@ ValposCameraR = [0] * 24  # Valori posizioni fotocamera rilevamento somma rosso
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
+End = False
 
 #------------INIZIO FORMALIZZAZIONE CLASSI------------------
 
@@ -243,8 +245,8 @@ def ValposUpdate():
         opt.ValposOld = Val
     for i in range(0, 24):
         blue = 0
-        green =0
-        red=0
+        green = 0
+        red = 0
         for j in range(0, 15):
             for k in range(0, 15):
                 b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
@@ -288,17 +290,25 @@ def ValposUpdate():
                     ValposUpdate()
 
 
-def Lampeggio(seconds, vel):
+def Lampeggio(name, vel):
     "Lampeggio lampadina dati i secondi."
-    start = time.time()
-    while True:
-        lamp.setLevel(OUTMIN)
-        time.sleep(vel)
-        lamp.setLevel(OUTMAX)
-        time.sleep(vel)
-        if (time.time() - start) >= seconds:
+    if isinstance(name, str):
+        while not End:
             lamp.setLevel(OUTMIN)
-            return
+            time.sleep(vel)
+            lamp.setLevel(OUTMAX)
+            time.sleep(vel)
+        thread.exit()
+    else:
+        start = time.time()
+        while True:
+            lamp.setLevel(OUTMIN)
+            time.sleep(vel)
+            lamp.setLevel(OUTMAX)
+            time.sleep(vel)
+            if time.time() - start >= name:
+                lamp.setLevel(OUTMIN)
+                return
 
 
 def AttendUser():
@@ -756,12 +766,17 @@ def Spostamento():
 
 reset()
 txt.startCameraOnline()
-Lampeggio(2.5, 0.2)
+try:
+    thread.start_new_thread(Lampeggio, ("Thread-1", 0.2))
+except BaseException:
+    print("Errore nell'avvio thread Lampeggio")
 ValposReset()
-f=open("data.txt","w")
+f = open("data.txt", "w")
 f.write("False")
 f.close()
+End = True
 lamp.setLevel(OUTMAX)
+End = False
 User = False
 Robot = False
 Fine = False
@@ -808,7 +823,7 @@ if (Robot):
         Controlli()
     #------------- Inizio seconda parte gioco---------------
 
-    f=open("data.txt","w")
+    f = open("data.txt", "w")
     f.write("True")
     f.close()
     while not Fine:
@@ -859,7 +874,7 @@ if (User):
         reset()
     #------------- Inizio seconda parte gioco---------------
 
-    f=open("data.txt","w")
+    f = open("data.txt", "w")
     f.write("True")
     f.close()
     while not Fine:
