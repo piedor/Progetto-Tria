@@ -14,6 +14,7 @@ import cv2
 import logging
 import opt
 import thread
+import sqlite3 as lite
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -771,9 +772,14 @@ try:
 except BaseException:
     print("Errore nell'avvio thread Lampeggio")
 ValposReset()
-f = open("data.txt", "w")
-f.write("False")
-f.close()
+db = lite.connect("data.db")
+with db:
+    c = db.cursor()
+    try:
+        c.execute('CREATE TABLE Continue(interrupt TEXT)')
+    except BaseException:
+        pass
+    c.execute("INSERT INTO Continue VALUES('True')")
 End = True
 lamp.setLevel(OUTMAX)
 End = False
@@ -822,10 +828,9 @@ if (Robot):
         ValposUpdate()
         Controlli()
     #------------- Inizio seconda parte gioco---------------
-
-    f = open("data.txt", "w")
-    f.write("True")
-    f.close()
+    with db:
+        c.execute(
+            "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
     while not Fine:
         print("___2 parte___")
         Spostamento()
@@ -874,9 +879,9 @@ if (User):
         reset()
     #------------- Inizio seconda parte gioco---------------
 
-    f = open("data.txt", "w")
-    f.write("True")
-    f.close()
+    with db:
+        c.execute(
+            "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
     while not Fine:
         print("___2 parte___")
         PosSpostaUpdate()
