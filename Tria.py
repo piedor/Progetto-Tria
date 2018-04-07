@@ -13,8 +13,9 @@ import random
 import cv2
 import logging
 import opt
-import thread
 import sqlite3 as lite
+import sys
+import os
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -55,11 +56,10 @@ Ypos = [900, 900, 900, 1471, 1670, 1471, 2500, 2500, 2500,
         3926, 4747, 4747, 4747, 5531, 5531, 5531]
 
 # Coordinate posizioni immagine fotocamera
-XposIMG = [100, 155, 211, 119, 157, 195, 138, 157, 177, 101, 119, 140, 177,
-           196, 215, 139, 160, 178, 120, 161, 203, 100, 163, 222]
-YposIMG = [67, 62, 60, 81, 79, 76, 99, 98, 97, 118, 118, 118, 115, 114, 113,
-           135, 135, 133, 155, 154, 151, 175, 175, 169]
-
+XposIMG = [105, 159, 217, 125, 161, 199, 144, 163, 181, 105, 123,
+           144, 183, 201, 220, 144, 164, 184, 123, 162, 203, 105, 165, 226]
+YposIMG = [69, 67, 64, 84, 82, 81, 101, 102, 100, 121, 121, 121,
+           118, 118, 117, 139, 139, 137, 159, 158, 156, 179, 177, 173]
 # Valore posizione(0 = posizione vuota, 1 = pallina Robot, 10 = pallina User)
 EMPTY = 0
 ROBOT = 1
@@ -113,7 +113,7 @@ ValposCameraR = [0] * 24  # Valori posizioni fotocamera rilevamento somma rosso
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
-End = False
+Fase = 1
 
 #------------INIZIO FORMALIZZAZIONE CLASSI------------------
 
@@ -212,10 +212,13 @@ def fromto(x1, y1, x2, y2):
 def ValposReset():
     global TRIA
     "Rilevamento somme blu posizioni fotocamera all'inizio."
-    for i in range(0, 50):
-        frameCamera = txt.getCameraFrame()
-        with open(CAM_IMAGE, 'wb') as f:
-            f.write(bytearray(frameCamera))
+    try:
+        for i in range(0, 50):
+            frameCamera = txt.getCameraFrame()
+            with open(CAM_IMAGE, 'wb') as f:
+                f.write(bytearray(frameCamera))
+    except BaseException:
+        sys.exit(0)
     img = cv2.imread(CAM_IMAGE, 1)
     for i in range(0, 24):
         blue = 0
@@ -261,11 +264,11 @@ def ValposUpdate():
                 print("pallina blu nella posizione "), i
         if abs(
                 blue -
-                ValposCameraB[i]) < 2000 and abs(
+                ValposCameraB[i]) < 1500 and abs(
                 green -
-                ValposCameraG[i]) < 2000 and abs(
+                ValposCameraG[i]) < 1500 and abs(
                 red -
-                ValposCameraR[i]) < 2000:
+                ValposCameraR[i]) < 1500:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -289,27 +292,22 @@ def ValposUpdate():
                     RIMETTI A POSTO!""")
                     AttendUser()
                     ValposUpdate()
+            if Fase == 2:
+                if Val[i] == USER:
+                    Val[i] = EMPTY
 
 
-def Lampeggio(name, vel):
+def Lampeggio(seconds, vel):
     "Lampeggio lampadina dati i secondi."
-    if isinstance(name, str):
-        while not End:
+    start = time.time()
+    while True:
+        lamp.setLevel(OUTMIN)
+        time.sleep(vel)
+        lamp.setLevel(OUTMAX)
+        time.sleep(vel)
+        if time.time() - start >= seconds:
             lamp.setLevel(OUTMIN)
-            time.sleep(vel)
-            lamp.setLevel(OUTMAX)
-            time.sleep(vel)
-        thread.exit()
-    else:
-        start = time.time()
-        while True:
-            lamp.setLevel(OUTMIN)
-            time.sleep(vel)
-            lamp.setLevel(OUTMAX)
-            time.sleep(vel)
-            if time.time() - start >= name:
-                lamp.setLevel(OUTMIN)
-                return
+            return
 
 
 def AttendUser():
@@ -319,6 +317,36 @@ def AttendUser():
         if input_finemossa.state() == 1:
             lamp.setLevel(OUTMIN)
             return
+
+
+def AddPallina(Pos):
+    fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
+    catch()
+    fromto(scivoloPalline[0], scivoloPalline[1], Xpos[Pos], Ypos[Pos])
+    release()
+    Val[Pos] = 1
+
+
+def RemovePallina(Pos):
+    fromto(opt.CurrentX, opt.CurrentY,
+           Xpos[Pos], Ypos[Pos])
+    catch()
+    fromto(Xpos[Pos], Ypos[Pos],
+           contenitorePVR[0], contenitorePVR[1])
+    ventosa.setLevel(OUTMIN)
+    Val[Pos] = EMPTY
+
+
+def MovePallina(Pos1, Pos2):
+    fromto(0, 0, Xpos[Pos1], Ypos[Pos1])
+    catch()
+    fromto(Xpos[Pos1],
+           Ypos[Pos1],
+           Xpos[Pos2],
+           Ypos[Pos2])
+    release()
+    Val[Pos1] = 0
+    Val[Pos2] = 1
 
 
 def Strategia():
@@ -338,11 +366,7 @@ def Strategia():
                         ritorno = False
                         break
             if ritorno:
-                fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                catch()
-                fromto(scivoloPalline[0], scivoloPalline[1], Xpos[j], Ypos[j])
-                release()
-                Val[j] = ROBOT
+                AddPallina(j)
                 return
     for i in ANG_QUADRATI:
         for j in COLLEGAMENTI:
@@ -354,12 +378,7 @@ def Strategia():
                     Val[i] = EMPTY
                     Val[j] = EMPTY
                     if len(opt.PosSvolgiTria) > 1:
-                        fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                        catch()
-                        fromto(scivoloPalline[0], scivoloPalline[1],
-                               Xpos[i], Ypos[i])
-                        release()
-                        Val[i] = ROBOT
+                        AddPallina(i)
                         opt.PosAttacco = [j]
                         opt.AttaccoState = 1
                         return
@@ -381,10 +400,12 @@ def FPossibiliTria():
             posEmpty = i[s.index(0)]
         if 10 in s:
             posUser = i[s.index(10)]
+            for j in i:
+                if Val[j] == USER:
+                    opt.PosTogliPallina.append(j)
         if sum(s) == 20:
             opt.Priorita = BLOCCOTRIA
             opt.PosBloccoTriaU.append(posEmpty)
-            opt.PosTogliPallina.append(posUser)
         elif sum(s) == 2:
             opt.PosSvolgiTria.append(posEmpty)
             pRobot = True
@@ -427,12 +448,8 @@ def ControlloAttacco():
             opt.Priorita = EMPTY
             Val[i] = EMPTY
             if len(opt.PosSvolgiTria) > 1:
-                fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                catch()
-                fromto(scivoloPalline[0], scivoloPalline[1], Xpos[i], Ypos[i])
-                release()
+                AddPallina(i)
                 opt.Priorita = 3
-                Val[i] = ROBOT
                 return
 
 
@@ -446,11 +463,7 @@ def Attacco():
             Val[p[0]] = ROBOT
             FPossibiliTria()
             if opt.PosSvolgiTria > 1:
-                fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-                catch()
-                fromto(scivoloPalline[0], scivoloPalline[1],
-                       Xpos[p[0]], Ypos[p[0]])
-                release()
+                AddPallina(p[0])
                 opt.AttaccoState = 0
             else:
                 Val[p[0]] = EMPTY
@@ -463,22 +476,12 @@ def Attacco():
 
 def BloccoTriaU():
     "Blocco tria utente."
-    fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-    catch()
-    fromto(scivoloPalline[0], scivoloPalline[1],
-           Xpos[opt.PosBloccoTriaU[0]], Ypos[opt.PosBloccoTriaU[0]])
-    release()
-    Val[opt.PosBloccoTriaU[0]] = ROBOT
+    AddPallina(opt.PosBloccoTriaU[0])
 
 
 def SvolgiTria():
     "Svolgi tria."
-    fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-    catch()
-    fromto(scivoloPalline[0], scivoloPalline[1],
-           Xpos[opt.PosSvolgiTria[0]], Ypos[opt.PosSvolgiTria[0]])
-    release()
-    Val[opt.PosSvolgiTria[0]] = ROBOT
+    AddPallina(opt.PosSvolgiTria[0])
 
 
 def Controlli():
@@ -504,20 +507,6 @@ def Controlli():
             AttendUser()
             ValposUpdate()
             LenPNU = len(opt.PosPallineNuoveU)
-    while not stop:
-        stop = True
-        for i1, i2 in zip(opt.ValposOld, Val):
-            ContatorePos = ContatorePos + 1
-            if i1 == USER or i1 == ROBOT:
-                if i2 == EMPTY:
-                    stop = False
-                    opt.ContatoreVPU = -1
-                    print("""\
-                    MOSSA UTENTE NON VALIDA!!!
-                    HAI SPOSTATO O RIMOSSO UNA PALLINA DALLA POSIZIONE %d"""), ContatorePos
-                    AttendUser()
-                    ValposUpdate()
-                    ContatorePos = 3
 
 
 def ControlloDifesa():
@@ -568,21 +557,16 @@ def ControlloDifesa():
 
 def Difesa():
     "Esecuzione difesa."
-    fromto(0, 0, scivoloPalline[0], scivoloPalline[1])
-    catch()
-    fromto(scivoloPalline[0], scivoloPalline[1],
-           Xpos[opt.PosDifesa], Ypos[opt.PosDifesa])
-    release()
-    Val[opt.PosDifesa] = ROBOT
+    AddPallina(opt.PosDifesa)
 
 
 def TogliPallina():
     "Togliere pallina utente quando robot esegue tria."
-    flag = 0
     opt.Controllo = True
     FPossibiliTria()
     if len(opt.PosBloccoTriaU) > 1:
         for i in range(0, 24):
+            flag = 0
             for j in opt.TrieUtente:
                 if i in j:
                     flag = 1
@@ -592,53 +576,33 @@ def TogliPallina():
                     FPossibiliTria()
                     Val[i] = USER
                     if len(opt.PosBloccoTriaU) == 0:
-                        fromto(opt.CurrentX, opt.CurrentY,
-                               Xpos[i], Ypos[i])
-                        catch()
-                        fromto(Xpos[i], Ypos[i],
-                               contenitorePVR[0], contenitorePVR[1])
-                        Val[i] = EMPTY
-                        ventosa.setLevel(OUTMIN)
+                        RemovePallina(i)
                         return
 
     for i in range(0, 24):
-        if Val[i] == EMPTY:
-            Val[i] = USER
-            FPossibiliTria()
-            Val[i] = EMPTY
+        flag = 0
         for j in opt.TrieUtente:
             if i in j:
                 flag = 1
         if flag == 0:
+            if Val[i] == EMPTY:
+                Val[i] = USER
+                FPossibiliTria()
+                Val[i] = EMPTY
             if len(opt.PosTogliPallina) > 0:
-                fromto(opt.CurrentX,
-                       opt.CurrentY,
-                       Xpos[opt.PosTogliPallina[0]],
-                       Ypos[opt.PosTogliPallina[0]])
-                catch()
-                Val[opt.PosTogliPallina[0]] = EMPTY
-                fromto(Xpos[opt.PosTogliPallina[0]],
-                       Ypos[opt.PosTogliPallina[0]],
-                       contenitorePVR[0],
-                       contenitorePVR[1])
-                ventosa.setLevel(OUTMIN)
-                return
+                for k in opt.PosTogliPallina:
+                    if Val[k] == USER
+                        RemovePallina(k)
+                        return
+
     for i in range(0, 24):
+        flag = 0
         for j in opt.TrieUtente:
             if i in j:
                 flag = 1
         if flag == 0:
             if Val[i] == 10:
-                fromto(
-                    opt.CurrentX,
-                    opt.CurrentY,
-                    Xpos[i],
-                    Ypos[i])
-                catch()
-                fromto(Xpos[i], Ypos[i],
-                       contenitorePVR[0], contenitorePVR[1])
-                Val[i] = EMPTY
-                ventosa.setLevel(OUTMIN)
+                RemovePallina(i)
                 return
 
 
@@ -727,6 +691,20 @@ def TrovaPosSposta(pos):
                 return i
 
 
+def ValposUpdate2():
+    for i1, i2 in zip(opt.ValposOld, Val):
+        if i1 == USER:
+            if i2 == EMPTY:
+                for i3, i4 in zip(opt.ValposOld, Val):
+                    if i3 == EMPTY:
+                        if i4 == USER:
+                            Val[i1] = 0
+                            Val[i3] = 10
+                            debug(
+                                "Pallina utente spostata dalla posizione %d alla posizione %d" %
+                                (i1, i3))
+
+
 def Spostamento():
     "Funzione principale per lo spostamento delle palline del robot"
     PosSpostaUpdate()
@@ -735,54 +713,42 @@ def Spostamento():
         for i in opt.PosSvolgiTria:
             if i in opt.PosSpostaR:
                 Pos = TrovaPosSposta(i)
-                fromto(0, 0, Xpos[Pos], Ypos[Pos])
-                catch()
-                fromto(Xpos[Pos],
-                       Ypos[Pos],
-                       Xpos[i],
-                       Ypos[i])
-                release()
+                MovePallina(Pos, i)
                 return
     elif opt.Priorita == BLOCCOTRIA:
         for i in opt.PosBloccoTriaU:
             if i in opt.PosSpostaR:
                 Pos = TrovaPosSposta(opt.PosBloccoTriaU)
-                fromto(0, 0, Xpos[Pos], Ypos[Pos])
-                catch()
-                fromto(Xpos[Pos],
-                       Ypos[Pos],
-                       Xpos[i],
-                       Ypos[i])
-                release()
+                MovePallina(Pos, i)
                 return
-    else:
-        for i in opt.PosSpostaR:
-            Pos = TrovaPosSposta(i)
-            fromto(0, 0, Xpos[Pos], Ypos[Pos])
-            catch()
-            fromto(Xpos[Pos], Ypos[Pos], Xpos[i], Ypos[i])
-            release()
+    elif len(opt.TrieRobot) > 0:
+        for i in opt.TrieRobot:
+            for j in i:
+                if len(PosSposta(j)) > 0:
+                    Val[j] = 0
+                    PosSpostaUpdate()
+                    if j not in opt.PosSpostaU:
+                        for k in PosSposta(j):
+                            MovePallina(j, k)
+                            return
+
 #-----INIZIO PROGRAMMA------------------------------------------------
 
 
 reset()
 txt.startCameraOnline()
-try:
-    thread.start_new_thread(Lampeggio, ("Thread-1", 0.2))
-except BaseException:
-    print("Errore nell'avvio thread Lampeggio")
+Lampeggio(2, 0.2)
 ValposReset()
+try:
+    os.remove("data.db")
+except BaseException:
+    pass
 db = lite.connect("data.db")
 with db:
     c = db.cursor()
-    try:
-        c.execute('CREATE TABLE Continue(interrupt TEXT)')
-    except BaseException:
-        pass
+    c.execute('CREATE TABLE if not exists Continue(interrupt TEXT)')
     c.execute("INSERT INTO Continue VALUES('True')")
-End = True
 lamp.setLevel(OUTMAX)
-End = False
 User = False
 Robot = False
 Fine = False
@@ -831,14 +797,16 @@ if (Robot):
     with db:
         c.execute(
             "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
+    print("___2 parte___")
+    Fase = 2
     while not Fine:
-        print("___2 parte___")
         Spostamento()
         FPossibiliTria()
         reset()
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
+        ValposUpdate2()
         # Controlli2F()
         FPossibiliTria()
 
@@ -882,11 +850,13 @@ if (User):
     with db:
         c.execute(
             "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
+    print("___2 parte___")
+    Fase = 2
     while not Fine:
-        print("___2 parte___")
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
+        ValposUpdate2()
         # Controlli2F()
         FPossibiliTria()
         Spostamento()
