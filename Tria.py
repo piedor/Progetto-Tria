@@ -13,9 +13,8 @@ import random
 import cv2
 import logging
 import opt
-import sqlite3 as lite
+import data
 import sys
-import os
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -56,10 +55,10 @@ Ypos = [900, 900, 900, 1471, 1670, 1471, 2500, 2500, 2500,
         3926, 4747, 4747, 4747, 5531, 5531, 5531]
 
 # Coordinate posizioni immagine fotocamera
-XposIMG = [105, 159, 217, 125, 161, 199, 144, 163, 181, 105, 123,
-           144, 183, 201, 220, 144, 164, 184, 123, 162, 203, 105, 165, 226]
-YposIMG = [69, 67, 64, 84, 82, 81, 101, 102, 100, 121, 121, 121,
-           118, 118, 117, 139, 139, 137, 159, 158, 156, 179, 177, 173]
+XposIMG = [101, 156, 213, 122, 160, 198, 143, 159, 179, 103, 120, 139, 179,
+           200, 217, 141, 161, 180, 120, 163, 200, 101, 162, 223]
+YposIMG = [66, 62, 60, 80, 79, 78, 97, 97, 97, 119, 114, 117, 114, 112, 113,
+           134, 134, 133, 155, 154, 152, 174, 172, 169]
 # Valore posizione(0 = posizione vuota, 1 = pallina Robot, 10 = pallina User)
 EMPTY = 0
 ROBOT = 1
@@ -210,8 +209,8 @@ def fromto(x1, y1, x2, y2):
 
 
 def ValposReset():
-    global TRIA
     "Rilevamento somme blu posizioni fotocamera all'inizio."
+    global TRIA
     try:
         for i in range(0, 50):
             frameCamera = txt.getCameraFrame()
@@ -264,11 +263,11 @@ def ValposUpdate():
                 print("pallina blu nella posizione "), i
         if abs(
                 blue -
-                ValposCameraB[i]) < 1500 and abs(
+                ValposCameraB[i]) < 2000 and abs(
                 green -
-                ValposCameraG[i]) < 1500 and abs(
+                ValposCameraG[i]) < 2000 and abs(
                 red -
-                ValposCameraR[i]) < 1500:
+                ValposCameraR[i]) < 2000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -353,7 +352,6 @@ def Strategia():
     "Strategia robot."
     opt.PosAttacco = []
     V = POS_CENTRALI
-    ritorno = True
     if (Val[V[0]] == EMPTY or
         Val[V[1]] == EMPTY or
         Val[V[2]] == EMPTY or
@@ -445,7 +443,7 @@ def ControlloAttacco():
         if Val[i] == EMPTY:
             Val[i] = ROBOT
             FPossibiliTria()
-            opt.Priorita = EMPTY
+            opt.Priorita = 0
             Val[i] = EMPTY
             if len(opt.PosSvolgiTria) > 1:
                 AddPallina(i)
@@ -591,7 +589,7 @@ def TogliPallina():
                 Val[i] = EMPTY
             if len(opt.PosTogliPallina) > 0:
                 for k in opt.PosTogliPallina:
-                    if Val[k] == USER
+                    if Val[k] == USER:
                         RemovePallina(k)
                         return
 
@@ -727,6 +725,7 @@ def Spostamento():
                 if len(PosSposta(j)) > 0:
                     Val[j] = 0
                     PosSpostaUpdate()
+                    Val[j] = 1
                     if j not in opt.PosSpostaU:
                         for k in PosSposta(j):
                             MovePallina(j, k)
@@ -739,15 +738,7 @@ reset()
 txt.startCameraOnline()
 Lampeggio(2, 0.2)
 ValposReset()
-try:
-    os.remove("data.db")
-except BaseException:
-    pass
-db = lite.connect("data.db")
-with db:
-    c = db.cursor()
-    c.execute('CREATE TABLE if not exists Continue(interrupt TEXT)')
-    c.execute("INSERT INTO Continue VALUES('True')")
+data.Insert("Continue", 'True')
 lamp.setLevel(OUTMAX)
 User = False
 Robot = False
@@ -794,9 +785,8 @@ if (Robot):
         ValposUpdate()
         Controlli()
     #------------- Inizio seconda parte gioco---------------
-    with db:
-        c.execute(
-            "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
+
+    data.Insert("Continue", 'False')
     print("___2 parte___")
     Fase = 2
     while not Fine:
@@ -847,9 +837,7 @@ if (User):
         reset()
     #------------- Inizio seconda parte gioco---------------
 
-    with db:
-        c.execute(
-            "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
+    data.Insert("Continue", 'False')
     print("___2 parte___")
     Fase = 2
     while not Fine:
