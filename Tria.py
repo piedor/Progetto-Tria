@@ -184,6 +184,8 @@ def fromto(x1, y1, x2, y2):
     start = time.time()
     opt.CurrentX = x2
     opt.CurrentY = y2
+    data.Insert("CurrentX",opt.CurrentX)
+    data.Insert("CurrentY",opt.CurrentY)
     diffx = x2 - x1
     diffy = y2 - y1
     distx = abs(diffx)
@@ -232,7 +234,7 @@ def ValposReset():
         ValposCameraB[i] = blue
         ValposCameraG[i] = green
         ValposCameraR[i] = red
-    opt.ValposOld = Val
+    data.Insert("ValposOld",opt.ValposOld)
     TRIA = SplitList(TRIA, 3)
 
 
@@ -244,8 +246,8 @@ def ValposUpdate():
     with open(CAM_IMAGE, 'wb') as f:
         f.write(bytearray(frameCamera))
     img = cv2.imread(CAM_IMAGE, 1)
-    if opt.ContatoreVPU > 2:
-        opt.ValposOld = Val
+    if opt.ContatoreVPU > 1:
+        opt.ValposOld = data.ReturnValue("Val")
     for i in range(0, 24):
         blue = 0
         green = 0
@@ -294,6 +296,8 @@ def ValposUpdate():
             if Fase == 2:
                 if Val[i] == USER:
                     Val[i] = EMPTY
+    data.Insert("Val",Val)
+    data.Insert("ValposOld",opt.ValposOld)
 
 
 def Lampeggio(seconds, vel):
@@ -324,6 +328,7 @@ def AddPallina(Pos):
     fromto(scivoloPalline[0], scivoloPalline[1], Xpos[Pos], Ypos[Pos])
     release()
     Val[Pos] = 1
+    data.Insert("Val",Val)
 
 
 def RemovePallina(Pos):
@@ -334,6 +339,7 @@ def RemovePallina(Pos):
            contenitorePVR[0], contenitorePVR[1])
     ventosa.setLevel(OUTMIN)
     Val[Pos] = EMPTY
+    data.Insert("Val",Val)
 
 
 def MovePallina(Pos1, Pos2):
@@ -346,6 +352,7 @@ def MovePallina(Pos1, Pos2):
     release()
     Val[Pos1] = 0
     Val[Pos2] = 1
+    data.Insert("Val",Val)
 
 
 def Strategia():
@@ -380,6 +387,9 @@ def Strategia():
                         opt.PosAttacco = [j]
                         opt.AttaccoState = 1
                         return
+    for i in range(0,24):
+        if Val[i]==EMPTY:
+            AddPallina(i)
 
 
 def FPossibiliTria():
@@ -674,6 +684,8 @@ def PosSposta(pos):
 
 def PosSpostaUpdate():
     "Aggiorna PosSpostaR e PosSpostaU"
+    opt.PosSpostaR=[]
+    opt.PosSpostaU=[]
     for i in range(0, 24):
         if Val[i] == 1:
             opt.PosSpostaR.append(PosSposta(i))
@@ -690,17 +702,21 @@ def TrovaPosSposta(pos):
 
 
 def ValposUpdate2():
+    c1=-1
+    c2=-1
     for i1, i2 in zip(opt.ValposOld, Val):
+        c1+=1
         if i1 == USER:
             if i2 == EMPTY:
                 for i3, i4 in zip(opt.ValposOld, Val):
+                    c2+=1
                     if i3 == EMPTY:
                         if i4 == USER:
-                            Val[i1] = 0
-                            Val[i3] = 10
+                            Val[c1] = 0
+                            Val[c2] = 10
                             debug(
                                 "Pallina utente spostata dalla posizione %d alla posizione %d" %
-                                (i1, i3))
+                                (c1, c2))
 
 
 def Spostamento():
@@ -709,16 +725,18 @@ def Spostamento():
     FPossibiliTria()
     if opt.Priorita == SVOLGITRIA:
         for i in opt.PosSvolgiTria:
-            if i in opt.PosSpostaR:
-                Pos = TrovaPosSposta(i)
-                MovePallina(Pos, i)
-                return
+            for j in opt.PosSpostaR:
+                if i in j:
+                    Pos = TrovaPosSposta(i)
+                    MovePallina(Pos, i)
+                    return
     elif opt.Priorita == BLOCCOTRIA:
         for i in opt.PosBloccoTriaU:
-            if i in opt.PosSpostaR:
-                Pos = TrovaPosSposta(opt.PosBloccoTriaU)
-                MovePallina(Pos, i)
-                return
+            for j in opt.PosSpostaR:
+                if i in j:
+                    Pos = TrovaPosSposta(opt.PosBloccoTriaU)
+                    MovePallina(Pos, i)
+                    return
     elif len(opt.TrieRobot) > 0:
         for i in opt.TrieRobot:
             for j in i:
@@ -756,6 +774,8 @@ lamp.setLevel(OUTMIN)
 if (Robot):
     #-------------------- Inizio prima fase gioco---------------------
     for i in range(0, 9):
+        data.Insert("i",i)
+        data.Insert("player",'Robot')
         debug("Controllo Possibili Trie...")
         FPossibiliTria()
         if opt.Priorita == BLOCCOTRIA:
@@ -784,12 +804,14 @@ if (Robot):
         AttendUser()
         ValposUpdate()
         Controlli()
+        data.Insert("player",'Utente')
     #------------- Inizio seconda parte gioco---------------
 
     data.Insert("Continue", 'False')
     print("___2 parte___")
     Fase = 2
     while not Fine:
+        data.Insert("player",'Robot')
         Spostamento()
         FPossibiliTria()
         reset()
@@ -798,12 +820,14 @@ if (Robot):
         ValposUpdate()
         ValposUpdate2()
         # Controlli2F()
+        data.Insert("player",'Utente')
         FPossibiliTria()
 
 
 if (User):
     for i in range(0, 9):
         #-------------------- Inizio prima fase gioco-----------------
+        data.Insert("player",'Utente')
         if i == 0:
             ValposUpdate()
         else:
@@ -811,6 +835,7 @@ if (User):
             AttendUser()
             ValposUpdate()
         Controlli()
+        data.Insert("player",'Robot')
         debug("Controllo Possibili Trie...")
         FPossibiliTria()
         if opt.Priorita == BLOCCOTRIA:
@@ -841,11 +866,13 @@ if (User):
     print("___2 parte___")
     Fase = 2
     while not Fine:
+        data.Insert("player",'Utente')
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
         ValposUpdate2()
         # Controlli2F()
+        data.Insert("player",'Robot')
         FPossibiliTria()
         Spostamento()
         FPossibiliTria()
