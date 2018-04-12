@@ -24,9 +24,14 @@ def Insert(name, val):
             db.execute("INSERT INTO %s (val) VALUES (%d)" % (name, val))
 
 
-def Print(name):
+def ReturnValue(name):
+    v=list()
     with db:
         c.execute("SELECT val FROM %s" % (name))
         rr = c.fetchall()
-        for r in rr:
-            print(r[0])
+        if(len(rr) >1):
+            for r in rr:
+                v.append(r[0])
+            return(v)
+        else:
+            return([j for r in rr for j in r][0])

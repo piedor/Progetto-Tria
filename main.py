@@ -7,7 +7,7 @@ if __name__ == "__main__":
     db = lite.connect("data.db")
     c = db.cursor()
     try:
-        c.execute("SELECT interrupt FROM Continue")
+        c.execute("SELECT val FROM Continue")
         rr = c.fetchall()
         for r in rr:
             if r[0] == "True":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
                 if r == 2:
                     with db:
                         c.execute(
-                            "UPDATE Continue SET interrupt = 'False' WHERE interrupt = 'True'")
+                            "UPDATE Continue SET val = 'False' WHERE val = 'True'")
     except BaseException:
         pass
     try:
