@@ -13,4 +13,5 @@ through the TXT Camera.
 # License
 This project is under MIT license. Further details can be found in file LICENSE
 # Images
+![Alt text](https://github.com/piedor/Progetto-Tria/blob/master/img/Frontal_Tria.jpg)
 ![Alt text](https://github.com/piedor/Progetto-Tria/blob/master/img/TXTCamImg.jpg)
