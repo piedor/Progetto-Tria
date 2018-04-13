@@ -25,11 +25,11 @@ def Insert(name, val):
 
 
 def ReturnValue(name):
-    v=list()
+    v = list()
     with db:
         c.execute("SELECT val FROM %s" % (name))
         rr = c.fetchall()
-        if(len(rr) >1):
+        if(len(rr) > 1):
             for r in rr:
                 v.append(r[0])
             return(v)

@@ -19,4 +19,5 @@ PosAttacco = []                 # Posizione attacco
 PosTogliPallina = []            # Posizione togli pallina
 PosSpostaR = []
 PosSpostaU = []
-GPos=-1
+GPos = -1
+PosPallineRimosseU = []
