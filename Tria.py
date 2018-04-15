@@ -36,7 +36,7 @@ USB = '192.168.7.2'
 
 txt = ftrobopy.ftrobopy('auto')  # Connessione al controller
 
-txt.play_sound(30, 50, 50)
+txt.play_sound(1,50)
 
 M = [txt.C_MOTOR, txt.C_MOTOR, txt.C_MOTOR, txt.C_OUTPUT]
 
@@ -109,8 +109,7 @@ input_InizioR = txt.input(8)
 
 Val = [0] * 24
 ValposCameraB = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
-ValposCameraG = [0] * 24  # Valori posizioni fotocamera rilevamento somma verde
-ValposCameraR = [0] * 24  # Valori posizioni fotocamera rilevamento somma rosso
+ValposCameraUpdated = [0]*24
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
@@ -225,17 +224,11 @@ def ValposReset():
     img = cv2.imread(CAM_IMAGE, 1)
     for i in range(0, 24):
         blue = 0
-        green = 0
-        red = 0
         for j in range(0, 15):
             for k in range(0, 15):
-                b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
+                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
-                green += g
-                red += r
         ValposCameraB[i] = blue
-        ValposCameraG[i] = green
-        ValposCameraR[i] = red
     data.Insert("ValposOld", opt.ValposOld)
     TRIA = SplitList(TRIA, 3)
 
@@ -253,26 +246,16 @@ def ValposUpdate():
         opt.ValposOld = data.ReturnValue("Val")
     for i in range(0, 24):
         blue = 0
-        green = 0
-        red = 0
         for j in range(0, 15):
             for k in range(0, 15):
-                b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
+                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
-                green += g
-                red += r
         if blue - ValposCameraB[i] > 3000:
             if Val[i] == EMPTY:
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
-        if abs(
-                blue -
-                ValposCameraB[i]) < 2000 and abs(
-                green -
-                ValposCameraG[i]) < 2000 and abs(
-                red -
-                ValposCameraR[i]) < 2000:
+        if ValposCameraUpdated[i] - blue > 3000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -280,7 +263,7 @@ def ValposUpdate():
                         if i in j:
                             flag = 1
                     if flag == 1:
-                        txt.play_sound(32, 1)
+                        txt.play_sound(3, 1)
                         print("""\
                         MOSSA UTENTE NON VALIDA!!!
                         NON PUOI TOGLIERE UNA PALLINA DA UNA TRIA DEL ROBOT.
@@ -292,7 +275,7 @@ def ValposUpdate():
                         opt.PosPallineRimosseU.append(i)
                         print("pallina Robot rimossa dalla posizione "), i
                 else:
-                    txt.play_sound(32, 1)
+                    txt.play_sound(3, 1)
                     print("""\
                     MOSSA UTENTE NON VALIDA!!!
                     NON HAI IL PERMESSO DI TOGLIERE LE PALLINE DEL ROBOT.
@@ -304,6 +287,20 @@ def ValposUpdate():
                     Val[i] = EMPTY
     data.Insert("Val", Val)
     data.Insert("ValposOld", opt.ValposOld)
+
+
+def ValposCameraUpdate():
+    frameCamera = txt.getCameraFrame()
+    with open(CAM_IMAGE, 'wb') as f:
+        f.write(bytearray(frameCamera))
+    img = cv2.imread(CAM_IMAGE, 1)
+    for i in range(0, 24):
+        blue = 0
+        for j in range(0, 15):
+            for k in range(0, 15):
+                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
+                blue += b
+        ValposCameraUpdated[i]=blue
 
 
 def Lampeggio(seconds, vel):
@@ -365,11 +362,12 @@ def Strategia():
     "Strategia robot."
     opt.PosAttacco = []
     V = POS_CENTRALI
+    random.shuffle(V)
     if (Val[V[0]] == EMPTY or
         Val[V[1]] == EMPTY or
         Val[V[2]] == EMPTY or
             Val[V[3]] == EMPTY):
-        for j in POS_CENTRALI:
+        for j in V:
             ritorno = True
             for i in TRIA:
                 if j in i:
@@ -429,7 +427,7 @@ def FPossibiliTria():
             if not opt.Controllo:
                 if i not in opt.TrieRobot:
                     opt.TrieRobot.append(i)
-                    txt.play_sound(34, 1)
+                    txt.play_sound(5, 1)
                     Lampeggio(1, 0.002)
                     TogliPallina()
                     opt.Controllo = False
@@ -438,7 +436,7 @@ def FPossibiliTria():
             if not opt.Controllo:
                 if i not in opt.TrieUtente:
                     opt.TrieUtente.append(i)
-                    txt.play_sound(33, 1)
+                    txt.play_sound(4, 1)
                     print("Hai formalizzato una Tria.")
                     print("Puoi eliminare una pallina avversaria!")
                     Lampeggio(1, 0.02)
@@ -512,42 +510,43 @@ def Controlli():
     "controllo mosse utente non valide."
     LenPNU = len(opt.PosPallineNuoveU)
     LenPRU = len(opt.PosPallineRimosseU)
-    while LenPNU > 1:
-        for i in range(0, LenPNU):
-            Val[opt.PosPallineNuoveU[i]] = EMPTY
-        txt.play_sound(32, 1)
-        print("""\
-        MOSSA UTENTE NON VALIDA!!!
-        SONO STATE POSIZIONATE PIU' PALLINE!!!
-        LASCIANE SOLTANTO UNA""")
-        AttendUser()
-        ValposUpdate()
-        LenPNU = len(opt.PosPallineNuoveU)
-    while LenPNU == 0:
-        txt.play_sound(32, 1)
-        print("""\
-        MOSSA UTENTE NON VALIDA!!!
-        NON HAI POSIZIONATO LA PALLINA!""")
-        AttendUser()
-        ValposUpdate()
-        LenPNU = len(opt.PosPallineNuoveU)
+    if not opt.TogliPallineR:
+        while LenPNU > 1:
+            for i in range(0, LenPNU):
+                Val[opt.PosPallineNuoveU[i]] = EMPTY
+            txt.play_sound(3, 1)
+            print("""\
+            MOSSA UTENTE NON VALIDA!!!
+            SONO STATE POSIZIONATE PIU' PALLINE!!!
+            LASCIANE SOLTANTO UNA""")
+            AttendUser()
+            ValposUpdate()
+            LenPNU = len(opt.PosPallineNuoveU)
+        while LenPNU == 0:
+            txt.play_sound(3, 1)
+            print("""\
+            MOSSA UTENTE NON VALIDA!!!
+            NON HAI POSIZIONATO LA PALLINA!""")
+            AttendUser()
+            ValposUpdate()
+            LenPNU = len(opt.PosPallineNuoveU)
     if opt.TogliPallineR:
         while LenPRU > 1:
             for i in range(0, LenPRU):
                 Val[opt.PosPallineRimosseU[i]] = EMPTY
-            txt.play_sound(32, 1)
+            txt.play_sound(3, 1)
             print("""\
             MOSSA UTENTE NON VALIDA!!!
-            HAI RIMOSSO PIU' PALLINE DELL'UTENTE!!!
+            HAI RIMOSSO PIU' PALLINE DEL ROBOT!!!
             """)
             AttendUser()
             ValposUpdate()
             LenPRU = len(opt.PosPallineRimosseU)
         while LenPRU == 0:
-            txt.play_sound(32, 1)
+            txt.play_sound(3, 1)
             print("""\
             MOSSA UTENTE NON VALIDA!!!
-            NON HAI RIMOSSO UNA PALLINA DELL'UTENTE!""")
+            NON HAI RIMOSSO UNA PALLINA DEL ROBOT!""")
             AttendUser()
             ValposUpdate()
             LenPRU = len(opt.PosPallineRimosseU)
@@ -776,14 +775,14 @@ def Spostamento():
                     Pos = TrovaPosSposta(i)
                     MovePallina(Pos, i)
                     return
-    elif opt.Priorita == BLOCCOTRIA:
+    if opt.Priorita == BLOCCOTRIA:
         for i in opt.PosBloccoTriaU:
             for j in opt.PosSpostaR:
                 if i in j:
                     Pos = TrovaPosSposta(opt.PosBloccoTriaU)
                     MovePallina(Pos, i)
                     return
-    elif len(opt.TrieRobot) > 0:
+    if len(opt.TrieRobot) > 0:
         for i in opt.TrieRobot:
             for j in i:
                 if len(PosSposta(j)) > 0:
@@ -847,10 +846,12 @@ if (Robot):
             Attacco()
         debug("Reset...")
         reset()
+        ValposCameraUpdate()
         debug("Attend Utente...")
         AttendUser()
         ValposUpdate()
         Controlli()
+        ValposCameraUpdate()
         data.Insert("player", 'Utente')
     #------------- Inizio seconda parte gioco---------------
 
@@ -862,11 +863,13 @@ if (Robot):
         Spostamento()
         FPossibiliTria()
         reset()
+        ValposCameraUpdate()
         PosSpostaUpdate()
         AttendUser()
         ValposUpdate()
         ValposUpdate2()
         # Controlli2F()
+        ValposCameraUpdate()
         data.Insert("player", 'Utente')
         FPossibiliTria()
 
@@ -882,6 +885,7 @@ if (User):
             AttendUser()
             ValposUpdate()
         Controlli()
+        ValposCameraUpdate()
         data.Insert("player", 'Robot')
         debug("Controllo Possibili Trie...")
         FPossibiliTria()
@@ -907,6 +911,7 @@ if (User):
             Attacco()
         debug("Reset...")
         reset()
+        ValposCameraUpdate()
     #------------- Inizio seconda parte gioco---------------
 
     data.Insert("Continue", 'False')
@@ -919,8 +924,10 @@ if (User):
         ValposUpdate()
         ValposUpdate2()
         # Controlli2F()
+        ValposCameraUpdate()
         data.Insert("player", 'Robot')
         FPossibiliTria()
         Spostamento()
         FPossibiliTria()
         reset()
+        ValposCameraUpdate()
