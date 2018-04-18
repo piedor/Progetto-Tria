@@ -21,3 +21,4 @@ PosSpostaR = []
 PosSpostaU = []
 GPos = -1
 PosPallineRimosseU = []
+TriaSvolgiTria = []
