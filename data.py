@@ -1,3 +1,10 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+"""
+    Modulo python data.py per lavorare con i database composto da due funzioni Insert e ReturnValue
+"""
+
 import sqlite3 as lite
 
 db = lite.connect("data.db")
@@ -6,6 +13,7 @@ with db:
 
 
 def Insert(name, val):
+    "Inserisce un dato nel database dato il nome(str) e il valore(int,str,list)."
     with db:
         try:
             c.execute("DELETE FROM %s" % (name))
@@ -25,6 +33,7 @@ def Insert(name, val):
 
 
 def ReturnValue(name):
+    "Ritorna i valori della tabella già esistente dato il nome."
     v = list()
     with db:
         c.execute("SELECT val FROM %s" % (name))

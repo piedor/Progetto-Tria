@@ -1,3 +1,7 @@
+"""
+    Programma in Python per calibrare le coordinate delle posizioni viste dalla fotocamera
+"""
+
 import cv2
 
 SPACE_KEY = 1048608

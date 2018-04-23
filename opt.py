@@ -1,7 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-ValposOld = [0] * 24
+"""
+    Modulo python opt.py il quale contiene tutte le variabili globali di Tria.py
+"""
+
+ValposOld = [0] * 24            # Array valori posizioni vecchie
 CurrentX = 0                    # Coordinata X corrente
 CurrentY = 0                    # Coordinata Y corrente
 PosBloccoTriaU = []             # Posizione blocco tria utente
@@ -12,13 +16,12 @@ ContatoreVPU = 0                # Contatore Valpos Update
 PosPallineNuoveU = []           # Posizioni palline posizionate utente
 PosDifesa = 0                   # Posizione difesa
 Controllo = False               # Boolean controllo
-TogliPallineR = False
-TrieUtente = []
-TrieRobot = []
+TogliPallineR = False           # Boolean togli palline robot
+TrieUtente = []                 # Array trie utente
+TrieRobot = []                  # Array trie robot
 PosAttacco = []                 # Posizione attacco
 PosTogliPallina = []            # Posizione togli pallina
-PosSpostaR = []
-PosSpostaU = []
-GPos = -1
-PosPallineRimosseU = []
-TriaSvolgiTria = []
+PosSpostaR = []                 # Posizioni possibili spostamento robot
+PosSpostaU = []                 # Posizioni possibili spostamento utente
+PosPallineRimosseU = []         # Array posizioni palline rimosse utente
+PrioritaTR = False              # Boolean tria robot
