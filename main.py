@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+    Main program
+"""
+
 import sqlite3 as lite
 
 if __name__ == "__main__":
