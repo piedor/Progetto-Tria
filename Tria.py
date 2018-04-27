@@ -113,7 +113,6 @@ ValposCameraUpdatedR = [0] * 24  # Valori red delle posizioni
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
-Fase = 1  # Variabile fase del gioco
 
 #------------INIZIO FORMALIZZAZIONE CLASSI------------------
 
@@ -289,7 +288,7 @@ def ValposUpdate():
                     ValposUpdate()
         if (ValposCameraUpdatedB[i] -
                 blue > 5000):
-            if Fase == 2:
+            if opt.Fase == 2:
                 if Val[i] == USER:
                     Val[i] = EMPTY
                     debug("Pallina Utente rimossa dalla posizione %d" % (i))
@@ -738,21 +737,22 @@ def Controlli2F():
         Pos1, Pos2 = ReturnValUS()
     Val[Pos1[0]] = 10
     Val[Pos2[0]] = 0
-    while Pos2[0] not in PosSposta(Pos1[0]):
-        print("""
-        MOSSA UTENTE NON VALIDA!!!
-        NON PUOI SPOSTARE LA PALLINA DALLA POSIZIONE """, Pos1[0], """ ALLA POSIZIONE """,
-              Pos2[0])
-        Val[Pos1[0]] = 10
-        Val[Pos2[0]] = 0
-        AttendUser()
-        ValposUpdate()
-        Pos1, Pos2 = ReturnValUS()
-    Val[Pos1[0]] = 0
-    Val[Pos2[0]] = 10
-    debug(
-        "Pallina utente spostata dalla posizione %d alla posizione %d" %
-        (Pos1[0], Pos2[0]))
+    if not opt.User3F:
+        while Pos2[0] not in PosSposta(Pos1[0]):
+            print("""
+            MOSSA UTENTE NON VALIDA!!!
+            NON PUOI SPOSTARE LA PALLINA DALLA POSIZIONE """, Pos1[0], """ ALLA POSIZIONE """,
+                  Pos2[0])
+            Val[Pos1[0]] = 10
+            Val[Pos2[0]] = 0
+            AttendUser()
+            ValposUpdate()
+            Pos1, Pos2 = ReturnValUS()
+        Val[Pos1[0]] = 0
+        Val[Pos2[0]] = 10
+        debug(
+            "Pallina utente spostata dalla posizione %d alla posizione %d" %
+            (Pos1[0], Pos2[0]))
 
 
 def PosSposta(pos):
@@ -865,6 +865,30 @@ def Spostamento():
                     return
 
 
+def CheckIs3F():
+    if opt.Fase==2:
+        if Val.count(1) == 3:
+            opt.Fase=3
+            print("Il robot è entrato nella terza fase")
+    if not opt.User3F:
+        if Val.count(10)==3:
+            opt.User3F=True
+            print("Sei entrato nella terza fase")
+
+
+def Spostamento3F():
+    r = range(0, 24)
+    random.shuffle(r)
+    for i in r:
+        if Val[i] == 0:
+            s = range(0, 24)
+            random.shuffle(s)
+            for j in s:
+                if Val[j] == 1:
+                    MovePallina(j, i)
+                    return
+
+
 def ControlloFine():
     "Controllo fine partita"
     PosSpostaUpdate()
@@ -939,15 +963,19 @@ if (Robot):
         Controlli()
         ValposCameraUpdate()
         data.Insert("player", 'Utente')
-    #------------- Inizio seconda parte gioco---------------
+    #------------- Inizio seconda e terza parte gioco---------------
 
     data.Insert("Continue", 'False')
     print("___2 parte___")
-    Fase = 2
+    opt.Fase = 2
     while True:
         data.Insert("player", 'Robot')
         ControlloFine()
-        Spostamento()
+        if opt.Fase ==2:
+            Spostamento()
+        else:
+            Spostamento3F()
+        CheckIs3F()
         FPossibiliTria()
         reset()
         ValposCameraUpdate()
@@ -957,6 +985,7 @@ if (Robot):
         ValposUpdate()
         Controlli2F()
         ValposCameraUpdate()
+        CheckIs3F()
         data.Insert("player", 'Utente')
         FPossibiliTria()
 
@@ -1003,7 +1032,7 @@ if (User):
 
     data.Insert("Continue", 'False')
     print("___2 parte___")
-    Fase = 2
+    opt.Fase = 2
     while True:
         ControlloFine()
         data.Insert("player", 'Utente')
@@ -1012,10 +1041,15 @@ if (User):
         ValposUpdate()
         Controlli2F()
         ValposCameraUpdate()
+        CheckIs3F()
         ControlloFine()
         data.Insert("player", 'Robot')
         FPossibiliTria()
-        Spostamento()
+        if opt.Fase ==2:
+            Spostamento()
+        else:
+            Spostamento3F()
+        CheckIs3F()
         FPossibiliTria()
         reset()
         ValposCameraUpdate()

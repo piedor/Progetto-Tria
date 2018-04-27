@@ -25,3 +25,5 @@ PosSpostaR = []                 # Posizioni possibili spostamento robot
 PosSpostaU = []                 # Posizioni possibili spostamento utente
 PosPallineRimosseU = []         # Array posizioni palline rimosse utente
 PrioritaTR = False              # Boolean tria robot
+Fase = 1                        # Variabile fase del gioco
+User3F=False                    # Boolean utente 3 fase
