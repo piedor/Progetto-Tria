@@ -48,13 +48,11 @@ txt.updateConfig()
 #--------INIZIO DICHIARAZIONE VARIABILI---------------------
 
 # Coordinate X e Y di ogni posizione in ordine numerico
-Xpos = [970, 2635, 4211, 1580, 2560, 3690, 2180, 2635,
-        3090, 970, 1500, 2180, 3090, 3690, 4211, 2050,
-        2635, 3090, 1580, 2635, 3690, 970, 2635, 4211]
+Xpos = [1000, 2665, 4241, 1610, 2590, 3720, 2210, 2665, 3120, 1000, 1530,
+ 2210, 3120, 3720, 4241, 2080, 2665, 3120, 1610, 2665, 3720, 1000, 2665, 4241]
 
-Ypos = [900, 900, 900, 1471, 1670, 1471, 2500, 2500, 2500,
-        3200, 3200, 3200, 3200, 3200, 3200, 3926, 3926,
-        3926, 4747, 4747, 4747, 5531, 5531, 5531]
+Ypos = [760, 760, 760, 1331, 1530, 1331, 2360, 2360, 2360, 3060, 3060, 3060,
+        3060, 3060, 3060, 3786, 3786, 3786, 4607, 4607, 4607, 5391, 5391, 5391]
 
 # Coordinate posizioni immagine fotocamera
 XposIMG = [101, 156, 213, 122, 160, 198, 143, 159, 179, 103, 120, 139, 179,
@@ -90,7 +88,7 @@ COLLEGAMENTI = [9, 10, 11, 22, 19, 16, 14, 13,
 POS_CENTRALI = [4, 10, 19, 13]  # Posizioni centro dei collegamenti tria
 
 # Coordinate X e Y dello scivolo su cui sono presenti le palline del Robot
-scivoloPalline = [80, 4280]
+scivoloPalline = [120, 4140]
 contenitorePVR = [5025, 4308]      # Contenitore palline vinte robot
 contenitorePVU = [2635, 0]      # Contenitore palline vinte user
 
@@ -806,10 +804,12 @@ def PosSpostaUpdate():
 
 def TrovaPosSposta(pos):
     "Trova la pedina del robot che può spostarsi nella posizione pos."
+    p=[]
     for i in range(0, 24):
         if Val[i] == 1:
             if pos in PosSposta(i):
-                return i
+                p.append(i)
+    return p
 
 
 def Spostamento():
@@ -821,23 +821,27 @@ def Spostamento():
             for j in opt.PosSpostaR:
                 if i in j:
                     Pos = TrovaPosSposta(i)
-                    opt.Controllo = True
-                    Val[Pos] = 0
-                    Val[i] = 1
-                    FPossibiliTria()
-                    Val[Pos] = 1
-                    Val[i] = 0
-                    if opt.PrioritaTR:
-                        MovePallina(Pos, i)
-                        return
+                    for k in Pos:
+                        if k:
+                            opt.Controllo = True
+                            Val[k] = 0
+                            Val[i] = 1
+                            FPossibiliTria()
+                            Val[k] = 1
+                            Val[i] = 0
+                            opt.Controllo = False
+                            if opt.PrioritaTR:
+                                MovePallina(k, i)
+                                return
     if opt.Priorita == BLOCCOTRIA:
         for i in opt.PosBloccoTriaU:
             for j in opt.PosSpostaR:
                 if i in j:
                     Pos = TrovaPosSposta(opt.PosBloccoTriaU)
-                    if Pos:
-                        MovePallina(Pos, i)
-                        return
+                    for k in Pos:
+                        if k:
+                            MovePallina(k, i)
+                            return
     if len(opt.TrieRobot) > 0:
         for i in opt.TrieRobot:
             for j in i:
@@ -855,9 +859,10 @@ def Spostamento():
     for i in r:
         if Val[i] == 0:
             Pos = TrovaPosSposta(i)
-            if Pos:
-                MovePallina(Pos, i)
-                return
+            for k in Pos:
+                if k:
+                    MovePallina(k, i)
+                    return
 
 
 def ControlloFine():
@@ -888,7 +893,6 @@ txt.stop_sound()
 lamp.setLevel(OUTMAX)
 User = False
 Robot = False
-Fine = False
 
 while True:
     if input_InizioR.state() == 1:
@@ -940,7 +944,7 @@ if (Robot):
     data.Insert("Continue", 'False')
     print("___2 parte___")
     Fase = 2
-    while not Fine:
+    while True:
         data.Insert("player", 'Robot')
         ControlloFine()
         Spostamento()
@@ -1000,7 +1004,7 @@ if (User):
     data.Insert("Continue", 'False')
     print("___2 parte___")
     Fase = 2
-    while not Fine:
+    while True:
         ControlloFine()
         data.Insert("player", 'Utente')
         PosSpostaUpdate()
