@@ -15,6 +15,8 @@ import logging
 import opt
 import data
 import sys
+import math
+import align_TXTCamIMG
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -30,6 +32,7 @@ __date__ = "10/01/2018"
 
 
 CAM_IMAGE = 'img/TXTCamImg.jpg'
+IMAGE_ALIGN = 'img/aligned.jpg'
 
 WLAN = '192.168.8.2'
 USB = '192.168.7.2'
@@ -48,17 +51,15 @@ txt.updateConfig()
 #--------INIZIO DICHIARAZIONE VARIABILI---------------------
 
 # Coordinate X e Y di ogni posizione in ordine numerico
-Xpos = [1000, 2665, 4241, 1610, 2590, 3720, 2210, 2665, 3120, 1000, 1530,
- 2210, 3120, 3720, 4241, 2080, 2665, 3120, 1610, 2665, 3720, 1000, 2665, 4241]
+Xpos = [1000,2665,4241,1610,2590,3720,2210,2665,3120,1000,1530,2210,3120,
+        3720,4241,2080,2665,3120,1610,2665,3720,1000,2665,4241]
 
 Ypos = [760, 760, 760, 1331, 1530, 1331, 2360, 2360, 2360, 3060, 3060, 3060,
         3060, 3060, 3060, 3786, 3786, 3786, 4607, 4607, 4607, 5391, 5391, 5391]
 
 # Coordinate posizioni immagine fotocamera
-XposIMG = [101, 156, 213, 122, 160, 198, 143, 159, 179, 103, 120, 139, 179,
-           200, 217, 141, 161, 180, 120, 163, 200, 101, 162, 223]
-YposIMG = [66, 62, 60, 80, 79, 78, 97, 97, 97, 119, 114, 117, 114, 112, 113,
-           134, 134, 133, 155, 154, 152, 174, 172, 169]
+XposIMG = data.ReturnValue("XposIMG")
+YposIMG = data.ReturnValue("YposIMG")
 # Valore posizione(0 = posizione vuota, 1 = pallina Robot, 10 = pallina User)
 EMPTY = 0
 ROBOT = 1
@@ -110,6 +111,11 @@ ValposCameraB = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
 ValposCameraUpdatedB = [0] * 24  # Valori blue delle posizioni
 ValposCameraUpdatedG = [0] * 24  # Valori green delle posizioni
 ValposCameraUpdatedR = [0] * 24  # Valori red delle posizioni
+strati = 3
+for i in range(0, len(XposIMG)):
+    XposIMG[i] -= strati
+for i in range(0, len(YposIMG)):
+    YposIMG[i] -= strati
 
 User = False                    # Boolean inizio utente
 Robot = False                   # Boolean inizio robot
@@ -218,13 +224,14 @@ def ValposReset():
             frameCamera = txt.getCameraFrame()
             with open(CAM_IMAGE, 'wb') as f:
                 f.write(bytearray(frameCamera))
+        align_TXTCamIMG.run()
     except BaseException:
         sys.exit(0)
-    img = cv2.imread(CAM_IMAGE, 1)
+    img = cv2.imread(IMAGE_ALIGN, 1)
     for i in range(0, 24):
         blue = 0
-        for j in range(0, 15):
-            for k in range(0, 15):
+        for j in range(0, (strati * 2) + 1):
+            for k in range(0, (strati * 2) + 1):
                 b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
         ValposCameraB[i] = blue
@@ -238,28 +245,29 @@ def ValposUpdate():
     frameCamera = txt.getCameraFrame()
     with open(CAM_IMAGE, 'wb') as f:
         f.write(bytearray(frameCamera))
-    img = cv2.imread(CAM_IMAGE, 1)
+    align_TXTCamIMG.run()
+    img = cv2.imread(IMAGE_ALIGN, 1)
     if opt.ContatoreVPU > 1:
         opt.ValposOld = data.ReturnValue("Val")
     for i in range(0, 24):
         blue = 0
         green = 0
         red = 0
-        for j in range(0, 15):
-            for k in range(0, 15):
+        for j in range(0, (strati * 2) + 1):
+            for k in range(0, (strati * 2) + 1):
                 b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
                 green += g
                 red += r
-        if blue - ValposCameraB[i] > 3000:
+        if math.sqrt((blue - ValposCameraB[i]) ^ 2) > 3000:
             if Val[i] == EMPTY:
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
-        if (ValposCameraUpdatedB[i] -
-            blue > 5000) and (ValposCameraUpdatedG[i] -
-                              green > 3000) and (ValposCameraUpdatedR[i] -
-                                                 red > 1000):
+        if math.sqrt(((ValposCameraUpdatedB[i] -
+                       blue) ^ 2) + ((ValposCameraUpdatedG[i] -
+                                      green) ^ 2) + ((ValposCameraUpdatedR[i] -
+                                                      red) ^ 2)) > 5000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -286,12 +294,10 @@ def ValposUpdate():
                     RIMETTI A POSTO!""")
                     AttendUser()
                     ValposUpdate()
-        if (ValposCameraUpdatedB[i] -
-                blue > 5000):
-            if opt.Fase == 2:
-                if Val[i] == USER:
-                    Val[i] = EMPTY
-                    debug("Pallina Utente rimossa dalla posizione %d" % (i))
+        if opt.Fase == 2:
+            if Val[i] == USER:
+                Val[i] = EMPTY
+                debug("Pallina Utente rimossa dalla posizione %d" % (i))
     data.Insert("Val", Val)
     data.Insert("ValposOld", opt.ValposOld)
 
@@ -301,7 +307,8 @@ def ValposCameraUpdate():
     frameCamera = txt.getCameraFrame()
     with open(CAM_IMAGE, 'wb') as f:
         f.write(bytearray(frameCamera))
-    img = cv2.imread(CAM_IMAGE, 1)
+    align_TXTCamIMG.run()
+    img = cv2.imread(IMAGE_ALIGN, 1)
     for i in range(0, 24):
         blue = 0
         green = 0
@@ -804,7 +811,7 @@ def PosSpostaUpdate():
 
 def TrovaPosSposta(pos):
     "Trova la pedina del robot che può spostarsi nella posizione pos."
-    p=[]
+    p = []
     for i in range(0, 24):
         if Val[i] == 1:
             if pos in PosSposta(i):
@@ -866,13 +873,13 @@ def Spostamento():
 
 
 def CheckIs3F():
-    if opt.Fase==2:
+    if opt.Fase == 2:
         if Val.count(1) == 3:
-            opt.Fase=3
+            opt.Fase = 3
             print("Il robot è entrato nella terza fase")
     if not opt.User3F:
-        if Val.count(10)==3:
-            opt.User3F=True
+        if Val.count(10) == 3:
+            opt.User3F = True
             print("Sei entrato nella terza fase")
 
 
@@ -971,7 +978,7 @@ if (Robot):
     while True:
         data.Insert("player", 'Robot')
         ControlloFine()
-        if opt.Fase ==2:
+        if opt.Fase == 2:
             Spostamento()
         else:
             Spostamento3F()
@@ -1028,7 +1035,7 @@ if (User):
         debug("Reset...")
         reset()
         ValposCameraUpdate()
-    #------------- Inizio seconda parte gioco---------------
+    #------------- Inizio seconda e terza parte gioco---------------
 
     data.Insert("Continue", 'False')
     print("___2 parte___")
@@ -1045,7 +1052,7 @@ if (User):
         ControlloFine()
         data.Insert("player", 'Robot')
         FPossibiliTria()
-        if opt.Fase ==2:
+        if opt.Fase == 2:
             Spostamento()
         else:
             Spostamento3F()
