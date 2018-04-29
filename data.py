@@ -36,11 +36,14 @@ def ReturnValue(name):
     "Ritorna i valori della tabella già esistente dato il nome."
     v = list()
     with db:
-        c.execute("SELECT val FROM %s" % (name))
-        rr = c.fetchall()
-        if(len(rr) > 1):
-            for r in rr:
-                v.append(r[0])
-            return(v)
-        else:
-            return([j for r in rr for j in r][0])
+        try:
+            c.execute("SELECT val FROM %s" % (name))
+            rr = c.fetchall()
+            if(len(rr) > 1):
+                for r in rr:
+                    v.append(r[0])
+                return(v)
+            else:
+                return([j for r in rr for j in r][0])
+        except BaseException:
+            return
