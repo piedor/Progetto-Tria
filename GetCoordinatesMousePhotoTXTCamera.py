@@ -19,10 +19,10 @@ def draw_circle(event, x, y, flags, params):
 
 def CalCoordinatesQ(nQ):
     i = nQ * 8
-    XposIMG[0 + i], XposIMG[2 + i], XposIMG[5 + i], XposIMG[7 + i] = nx
+    XposIMG[0 + i], XposIMG[7 + i], XposIMG[5 + i], XposIMG[2 + i] = nx * 2
     XposIMG[4 + i] = XposIMG[7 + i]
     XposIMG[3 + i] = XposIMG[0 + i]
-    YposIMG[0 + i], YposIMG[2 + i], YposIMG[5 + i], YposIMG[7 + i] = ny
+    YposIMG[0 + i], YposIMG[7 + i], YposIMG[2 + i], YposIMG[5 + i] = ny * 2
     YposIMG[1 + i] = YposIMG[0 + i]
     YposIMG[6 + i] = YposIMG[7 + i]
     XposIMG[1 + i] = ((XposIMG[2 + i] - XposIMG[0 + i]) / 2) + XposIMG[0 + i]
@@ -48,7 +48,7 @@ c = 0
 
 while True:
     cv2.imshow('image', img)
-    if (len(nx) and len(ny)) == 4:
+    if (len(nx) and len(ny)) == 2:
         CalCoordinatesQ(c)
         nx = []
         ny = []

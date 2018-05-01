@@ -108,6 +108,8 @@ input_InizioR = txt.input(8)
 
 Val = [0] * 24  # Valori posizioni(0=Vuota,1=Robot,10=Utente)
 ValposCameraB = [0] * 24  # Valori posizioni fotocamera rilevamento somma blu
+ValposCameraG = [0] * 24  # Valori posizioni fotocamera rilevamento somma verde
+ValposCameraR = [0] * 24  # Valori posizioni fotocamera rilevamento somma rosso
 ValposCameraUpdatedB = [0] * 24  # Valori blue delle posizioni
 ValposCameraUpdatedG = [0] * 24  # Valori green delle posizioni
 ValposCameraUpdatedR = [0] * 24  # Valori red delle posizioni
@@ -232,9 +234,13 @@ def ValposReset():
         blue = 0
         for j in range(0, (strati * 2) + 1):
             for k in range(0, (strati * 2) + 1):
-                b, _, _ = img[YposIMG[i] + k, XposIMG[i] + j]
+                b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
+                green += g
+                red += r
         ValposCameraB[i] = blue
+        ValposCameraG[i] = green
+        ValposCameraR[i] = red
     data.Insert("ValposOld", opt.ValposOld)
     TRIA = SplitList(TRIA, 3)
 
@@ -259,7 +265,8 @@ def ValposUpdate():
                 blue += b
                 green += g
                 red += r
-        if math.sqrt((blue - ValposCameraB[i]) ^ 2) > 3000:
+        if math.sqrt(((blue - ValposCameraB[i]) ^ 2) + (
+                (green - ValposCameraG[i]) ^ 2) + ((blue - ValposCameraR[i]) ^ 2)) > 5000:
             if Val[i] == EMPTY:
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
@@ -267,7 +274,7 @@ def ValposUpdate():
         if math.sqrt(((ValposCameraUpdatedB[i] -
                        blue) ^ 2) + ((ValposCameraUpdatedG[i] -
                                       green) ^ 2) + ((ValposCameraUpdatedR[i] -
-                                                      red) ^ 2)) > 5000:
+                                                      red) ^ 2)) > 4000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
