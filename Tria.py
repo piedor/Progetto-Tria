@@ -518,6 +518,28 @@ def ControlloAttacco():
                 AddPallina(i)
                 opt.Priorita = 3
                 return
+    for i in range(0, 24):
+        if Val[i] == EMPTY:
+            Val[i] = ROBOT
+            for j in range(0, 24):
+                if Val[j] == EMPTY:
+                    Val[j] = ROBOT
+                    for k in range(0, 24):
+                        if Val[k] == EMPTY:
+                            Val[k] = ROBOT
+                            opt.Controllo = True
+                            FPossibiliTria()
+                            opt.Controllo = False
+                            opt.Priorita = 0
+                            Val[k] = EMPTY
+                            if len(opt.PosSvolgiTria) > 3:
+                                AddPallina(i)
+                                opt.Priorita = 3
+                                Val[j] = EMPTY
+                                Val[i] = EMPTY
+                                return
+                    Val[j] = EMPTY
+            Val[i] = EMPTY
 
 
 def Attacco():
@@ -608,7 +630,6 @@ def Controlli():
 def ControlloDifesa():
     "Difesa da possibili strategie utente."
     a = ANGOLI
-    opt.Controllo = True
     for i in range(0, 24):
         if Val[i] == EMPTY:
             opt.Controllo = True
@@ -620,7 +641,7 @@ def ControlloDifesa():
             if len(opt.PosBloccoTriaU) > 1:
                 opt.Priorita = DIFESA
                 opt.PosDifesa = i
-                break
+                return
     if opt.Priorita != DIFESA:
         for i in range(0, 12):
             if Val[a[i]] == USER:
@@ -637,7 +658,8 @@ def ControlloDifesa():
                                 if len(opt.PosBloccoTriaU) > 1:
                                     opt.Priorita = DIFESA
                                     opt.PosDifesa = a[i + 3]
-                                    break
+                                    Val[a[i + 3]] = EMPTY
+                                    return
                         Val[a[i + 3]] = EMPTY
                 elif a[i] in [23, 20, 17, 2, 5, 8]:
                     if Val[a[i - 3]] == EMPTY:
@@ -652,9 +674,10 @@ def ControlloDifesa():
                                 if len(opt.PosBloccoTriaU) > 1:
                                     opt.Priorita = DIFESA
                                     opt.PosDifesa = a[i - 3]
-                                    break
+                                    Val[a[i - 3]] = EMPTY
+                                    return
                         Val[a[i - 3]] = EMPTY
-    opt.Controllo = False
+    opt.Priorita = EMPTY
 
 
 def Difesa():

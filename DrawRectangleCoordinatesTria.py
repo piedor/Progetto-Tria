@@ -9,8 +9,8 @@ WHITE = [255, 255, 255]
 
 # Coordinate posizioni immagine fotocamera
 x_pos = data.ReturnValue("XposIMG")
-
 y_pos = data.ReturnValue("YposIMG")
+
 img = cv2.imread('img/aligned.jpg')
 strati = 3
 
