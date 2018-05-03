@@ -437,6 +437,12 @@ def Strategia():
                         opt.PosAttacco = [j]
                         opt.AttaccoState = 1
                         return
+    if len(opt.TrieUtente) > 0:
+        for i in opt.TrieUtente:
+            for j in i:
+                for k in PosSposta(j):
+                    AddPallina(k)
+                    return
     for i in range(0, 24):
         if Val[i] == EMPTY:
             AddPallina(i)
@@ -450,6 +456,7 @@ def FPossibiliTria():
     opt.PosSvolgiTria = []
     opt.PosTogliPallina = []
     opt.PrioritaTR = False
+    opt.PrioritaTU = False
     posEmpty = -1
     posUser = -1
     pRobot = False
@@ -480,6 +487,7 @@ def FPossibiliTria():
                     opt.Controllo = False
                     return
         elif sum(s) == 30:
+            opt.PrioritaTU = True
             if not opt.Controllo:
                 if i not in opt.TrieUtente:
                     opt.TrieUtente.append(i)
@@ -505,7 +513,7 @@ def FPossibiliTria():
 
 
 def ControlloAttacco():
-    "Controllo se il Robot può aprirsi 2 trie."
+    "Controllo se il Robot può aprirsi 2 o più trie."
     for i in range(0, 24):
         if Val[i] == EMPTY:
             opt.Controllo = True
@@ -533,10 +541,10 @@ def ControlloAttacco():
                             opt.Priorita = 0
                             Val[k] = EMPTY
                             if len(opt.PosSvolgiTria) > 3:
-                                AddPallina(i)
-                                opt.Priorita = 3
                                 Val[j] = EMPTY
                                 Val[i] = EMPTY
+                                AddPallina(i)
+                                opt.Priorita = 3
                                 return
                     Val[j] = EMPTY
             Val[i] = EMPTY
@@ -839,14 +847,35 @@ def PosSpostaUpdate():
             opt.PosSpostaU.append(PosSposta(i))
 
 
-def TrovaPosSposta(pos):
-    "Trova la pedina del robot che può spostarsi nella posizione pos."
+def TrovaPosSposta(pos,player):
+    "Trova la pedina del robot o utente che può spostarsi nella posizione pos."
     p = []
     for i in range(0, 24):
-        if Val[i] == 1:
+        if Val[i] == player:
             if pos in PosSposta(i):
                 p.append(i)
     return p
+
+
+def SvolgiTriaU():
+    FPossibiliTria()
+    if opt.Priorita==BLOCCOTRIA:
+        for i in opt.PosBloccoTriaU:
+            for j in opt.PosSpostaU:
+                if i in j:
+                    Pos = TrovaPosSposta(i,USER)
+                    for k in Pos:
+                        if k:
+                            opt.Controllo = True
+                            Val[k] = 0
+                            Val[i] = 10
+                            FPossibiliTria()
+                            Val[k] = 10
+                            Val[i] = 0
+                            opt.Controllo = False
+                            if opt.PrioritaTU:
+                                return 1
+    return 0
 
 
 def Spostamento():
@@ -857,7 +886,7 @@ def Spostamento():
         for i in opt.PosSvolgiTria:
             for j in opt.PosSpostaR:
                 if i in j:
-                    Pos = TrovaPosSposta(i)
+                    Pos = TrovaPosSposta(i,ROBOT)
                     for k in Pos:
                         if k:
                             opt.Controllo = True
@@ -874,28 +903,29 @@ def Spostamento():
         for i in opt.PosBloccoTriaU:
             for j in opt.PosSpostaR:
                 if i in j:
-                    Pos = TrovaPosSposta(opt.PosBloccoTriaU)
+                    Pos = TrovaPosSposta(i,ROBOT)
                     for k in Pos:
                         if k:
                             MovePallina(k, i)
                             return
-    if len(opt.TrieRobot) > 0:
-        for i in opt.TrieRobot:
-            for j in i:
-                if len(PosSposta(j)) > 0:
-                    Val[j] = 0
-                    PosSpostaUpdate()
-                    Val[j] = 1
-                    if j not in opt.PosSpostaU:
-                        for k in PosSposta(j):
-                            if k:
-                                MovePallina(j, k)
-                                return
+    if not SvolgiTriaU:
+        if len(opt.TrieRobot) > 0:
+            for i in opt.TrieRobot:
+                for j in i:
+                    if len(PosSposta(j)) > 0:
+                        Val[j] = 0
+                        PosSpostaUpdate()
+                        Val[j] = 1
+                        if j not in opt.PosSpostaU:
+                            for k in PosSposta(j):
+                                if k:
+                                    MovePallina(j, k)
+                                    return
     r = range(0, 24)
     random.shuffle(r)
     for i in r:
         if Val[i] == 0:
-            Pos = TrovaPosSposta(i)
+            Pos = TrovaPosSposta(i,ROBOT)
             for k in Pos:
                 if k:
                     MovePallina(k, i)
