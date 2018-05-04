@@ -14,4 +14,8 @@ through the TXT Camera.
 This project is under MIT license. Further details can be found in file LICENSE
 # Images
 ![Alt text](https://github.com/piedor/Progetto-Tria/blob/master/img/Frontal_Tria.jpg)
+# Fischertechnik camera
+Normal:
 ![Alt text](https://github.com/piedor/Progetto-Tria/blob/master/img/TXTCamImg.jpg)
+Aligned:
+![Alt text](https://github.com/piedor/Progetto-Tria/blob/master/img/aligned.jpg)
