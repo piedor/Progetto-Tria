@@ -3,7 +3,7 @@
 """
 
 import cv2
-import data
+from data import data
 
 nx = list()           # 'list' is easier to search than '[]'
 ny = list()

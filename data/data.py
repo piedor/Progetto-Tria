@@ -7,7 +7,7 @@
 
 import sqlite3 as lite
 
-db = lite.connect("data.db")
+db = lite.connect("data/data.db")
 with db:
     c = db.cursor()
 

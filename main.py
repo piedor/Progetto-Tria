@@ -5,7 +5,7 @@
     Main program
 """
 
-import data
+from data import data
 
 if __name__ == "__main__":
     if not (data.ReturnValue("XposIMG") or data.ReturnValue("YposIMG")):

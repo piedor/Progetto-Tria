@@ -3,7 +3,7 @@
 """
 
 import cv2
-import data
+from data import data
 
 WHITE = [255, 255, 255]
 
