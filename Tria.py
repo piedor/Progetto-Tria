@@ -232,8 +232,8 @@ def ValposReset():
     img = cv2.imread(IMAGE_ALIGN, 1)
     for i in range(0, 24):
         blue = 0
-        green=0
-        red=0
+        green = 0
+        red = 0
         for j in range(0, (strati * 2) + 1):
             for k in range(0, (strati * 2) + 1):
                 b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
@@ -274,13 +274,13 @@ def ValposUpdate():
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
         print(math.sqrt(((ValposCameraUpdatedB[i] -
-                       blue) ** 2) + ((ValposCameraUpdatedG[i] -
-                                      green) ** 2) + ((ValposCameraUpdatedR[i] -
-                                                      red) ** 2)))
+                          blue) ** 2) + ((ValposCameraUpdatedG[i] -
+                                          green) ** 2) + ((ValposCameraUpdatedR[i] -
+                                                           red) ** 2)))
         if math.sqrt(((ValposCameraUpdatedB[i] -
                        blue) ** 2) + ((ValposCameraUpdatedG[i] -
-                                      green) ** 2) + ((ValposCameraUpdatedR[i] -
-                                                      red) ** 2)) > 6000:
+                                       green) ** 2) + ((ValposCameraUpdatedR[i] -
+                                                        red) ** 2)) > 6000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -461,10 +461,13 @@ def FPossibiliTria():
     opt.PosBloccoTriaU = []
     opt.PosSvolgiTria = []
     opt.PosTogliPallina = []
+    opt.PosTriaRSV = []
+    opt.TrieRSV = []
     opt.PrioritaTR = False
     opt.PrioritaTU = False
     posEmpty = -1
     posUser = -1
+    posRobot = -1
     pRobot = False
     s = 0
     for i in TRIA:
@@ -476,7 +479,12 @@ def FPossibiliTria():
             for j in i:
                 if Val[j] == USER:
                     opt.PosTogliPallina.append(j)
-        if sum(s) == 20:
+        if 1 in s:
+            posRobot = i[s.index(1)]
+        if sum(s) == 1:
+            opt.PosTriaRSV.append(posRobot)
+            opt.TrieRSV.append(i)
+        elif sum(s) == 20:
             opt.Priorita = BLOCCOTRIA
             opt.PosBloccoTriaU.append(posEmpty)
         elif sum(s) == 2:
@@ -807,7 +815,7 @@ def Controlli2F():
 
 
 def PosSposta(pos):
-    "Procedura data una posizione rilascia le posizioni dove può spostarsi VUOTE."
+    "Procedura data una posizione rilascia le posizioni adiacenti VUOTE."
     Pos = []
     for i in QUADRATI:
         i2 = QUADRATI.index(i)
@@ -853,7 +861,7 @@ def PosSpostaUpdate():
             opt.PosSpostaU.append(PosSposta(i))
 
 
-def TrovaPosSposta(pos,player):
+def TrovaPosSposta(pos, player):
     "Trova la pedina del robot o utente che può spostarsi nella posizione pos."
     p = []
     for i in range(0, 24):
@@ -865,11 +873,11 @@ def TrovaPosSposta(pos,player):
 
 def SvolgiTriaU():
     FPossibiliTria()
-    if opt.Priorita==BLOCCOTRIA:
+    if opt.Priorita == BLOCCOTRIA:
         for i in opt.PosBloccoTriaU:
             for j in opt.PosSpostaU:
                 if i in j:
-                    Pos = TrovaPosSposta(i,USER)
+                    Pos = TrovaPosSposta(i, USER)
                     for k in Pos:
                         if k:
                             opt.Controllo = True
@@ -892,7 +900,7 @@ def Spostamento():
         for i in opt.PosSvolgiTria:
             for j in opt.PosSpostaR:
                 if i in j:
-                    Pos = TrovaPosSposta(i,ROBOT)
+                    Pos = TrovaPosSposta(i, ROBOT)
                     for k in Pos:
                         if k:
                             opt.Controllo = True
@@ -909,7 +917,7 @@ def Spostamento():
         for i in opt.PosBloccoTriaU:
             for j in opt.PosSpostaR:
                 if i in j:
-                    Pos = TrovaPosSposta(i,ROBOT)
+                    Pos = TrovaPosSposta(i, ROBOT)
                     for k in Pos:
                         if k:
                             MovePallina(k, i)
@@ -927,11 +935,41 @@ def Spostamento():
                                 if k:
                                     MovePallina(j, k)
                                     return
+    for i in opt.TrieRSV:
+        for j in opt.PosTriaRSV:
+            i.remove(j)
+            Pos1 = TrovaPosSposta(i[0], ROBOT)
+            for k in Pos1:
+                if k and k != j:
+                    Pos2 = TrovaPosSposta(i[1], ROBOT)
+                    for y in Pos2:
+                        if y and y != j:
+                            MovePallina(k, i[0])
+                            return
+    for i in opt.PosSvolgiTria:
+        for j in PosSposta(i):
+            if j:
+                Pos = TrovaPosSposta(j, ROBOT)
+                for k in Pos:
+                    if k:
+                        MovePallina(k, j)
+                        return
+    for i in opt.PosBloccoTriaU:
+        for j in PosSposta(i):
+            if j:
+                Pos1 = TrovaPosSposta(j, USER)
+                for k in Pos:
+                    if k:
+                        Pos2 = TrovaPosSposta(j, ROBOT)
+                        for y in Pos2:
+                            if y:
+                                MovePallina(y, j)
+                                return
     r = range(0, 24)
     random.shuffle(r)
     for i in r:
         if Val[i] == 0:
-            Pos = TrovaPosSposta(i,ROBOT)
+            Pos = TrovaPosSposta(i, ROBOT)
             for k in Pos:
                 if k:
                     MovePallina(k, i)
