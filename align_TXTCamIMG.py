@@ -119,35 +119,29 @@ def make_matrix(pp, qq=None):
         pp_to_array(qq))
 
 
-def run():
-    board = read_image("img/TXTCamIMG2.jpg")
-    try:
-        with open(POS_PICKLE_FILE) as file:
-            pp = pickle.load(file)
-    except Exception:
-        with open(POS_PICKLE_FILE, "w") as file:
-            pp = pick_positions(board, count=4)
-            pickle.dump(pp, file)
+board = read_image("img/TXTCamIMG.jpg")
+try:
+    with open(POS_PICKLE_FILE) as file:
+        pp = pickle.load(file)
+except Exception as e:
+    print(e)
+    with open(POS_PICKLE_FILE, "w") as file:
+        pp = pick_positions(board, count=4)
+        pickle.dump(pp, file)
 
-    tl, tr, bl, br = pp
-    qq = (tl,
-          Point(tr.x, tl.y),
-          Point(tl.x, bl.y),
-          Point(tr.x, bl.y))
-    mat = make_matrix(pp, qq)
+tl, tr, bl, br = pp
+qq = (tl,
+      Point(tr.x, tl.y),
+      Point(tl.x, bl.y),
+      Point(tr.x, bl.y))
+mat = make_matrix(pp, qq)
 
-    w = max(tr.x, br.x) + 100
-    h = max(bl.y, br.y) + 100
-    board = cv2.warpPerspective(board, mat, (w, h))
+w = max(tr.x, br.x) + 100
+h = max(bl.y, br.y) + 100
+board = cv2.warpPerspective(board, mat, (w, h))
 
-    qq = pp_to_array(pp).dot(mat[:2, :2])
-    qq = [Point(p) for p in qq]
-    oo = inteporlate(*qq)
+qq = pp_to_array(pp).dot(mat[:2, :2])
+qq = [Point(p) for p in qq]
+oo = inteporlate(*qq)
 
-    write_image(board, "img/aligned2.jpg")
-
-    cv2.waitKey(0)
-
-
-if __name__ == "__main__":
-    run()
+write_image(board, "img/aligned.jpg")

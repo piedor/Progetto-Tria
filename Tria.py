@@ -13,10 +13,9 @@ import random
 import cv2
 import logging
 import opt
-import data
+from data import data
 import sys
 import math
-import Align_TXTCamIMG
 logging.basicConfig(level=logging.DEBUG)
 debug = logging.debug
 
@@ -228,7 +227,7 @@ def ValposReset():
                 f.write(bytearray(frameCamera))
     except BaseException:
         sys.exit(0)
-    Align_TXTCamIMG.run()
+    execfile("Align_TXTCamIMG.py",globals())
     img = cv2.imread(IMAGE_ALIGN, 1)
     for i in range(0, 24):
         blue = 0
@@ -253,7 +252,7 @@ def ValposUpdate():
     frameCamera = txt.getCameraFrame()
     with open(CAM_IMAGE, 'wb') as f:
         f.write(bytearray(frameCamera))
-    Align_TXTCamIMG.run()
+    execfile("Align_TXTCamIMG.py",globals())
     img = cv2.imread(IMAGE_ALIGN, 1)
     if opt.ContatoreVPU > 1:
         opt.ValposOld = data.ReturnValue("Val")
@@ -267,20 +266,18 @@ def ValposUpdate():
                 blue += b
                 green += g
                 red += r
-        if math.sqrt(((blue - ValposCameraB[i]) ** 2) + (
-                (green - ValposCameraG[i]) ** 2) + ((blue - ValposCameraR[i]) ** 2)) > 5000:
+        if math.sqrt(((ValposCameraB[i] -
+                       blue) ** 2) + ((ValposCameraG[i] -
+                                       green) ** 2) + ((ValposCameraR[i] -
+                                                        red) ** 2)) > 4000:
             if Val[i] == EMPTY:
                 Val[i] = USER
                 opt.PosPallineNuoveU.append(i)
                 print("pallina blu nella posizione "), i
-        print(math.sqrt(((ValposCameraUpdatedB[i] -
-                          blue) ** 2) + ((ValposCameraUpdatedG[i] -
-                                          green) ** 2) + ((ValposCameraUpdatedR[i] -
-                                                           red) ** 2)))
         if math.sqrt(((ValposCameraUpdatedB[i] -
                        blue) ** 2) + ((ValposCameraUpdatedG[i] -
                                        green) ** 2) + ((ValposCameraUpdatedR[i] -
-                                                        red) ** 2)) > 6000:
+                                                        red) ** 2)) > 4000:
             if Val[i] == ROBOT:
                 if opt.TogliPallineR:
                     flag = 0
@@ -307,10 +304,14 @@ def ValposUpdate():
                     RIMETTI A POSTO!""")
                     AttendUser()
                     ValposUpdate()
-        if opt.Fase == 2:
-            if Val[i] == USER:
-                Val[i] = EMPTY
-                debug("Pallina Utente rimossa dalla posizione %d" % (i))
+        if math.sqrt(((ValposCameraUpdatedB[i] -
+                       blue) ** 2) + ((ValposCameraUpdatedG[i] -
+                                       green) ** 2) + ((ValposCameraUpdatedR[i] -
+                                                        red) ** 2)) > 6000:
+            if opt.Fase == 2:
+                if Val[i] == USER:
+                    Val[i] = EMPTY
+                    debug("Pallina Utente rimossa dalla posizione %d" % (i))
     data.Insert("Val", Val)
     data.Insert("ValposOld", opt.ValposOld)
 
@@ -320,14 +321,14 @@ def ValposCameraUpdate():
     frameCamera = txt.getCameraFrame()
     with open(CAM_IMAGE, 'wb') as f:
         f.write(bytearray(frameCamera))
-    Align_TXTCamIMG.run()
+    execfile("Align_TXTCamIMG.py",globals())
     img = cv2.imread(IMAGE_ALIGN, 1)
     for i in range(0, 24):
         blue = 0
         green = 0
         red = 0
-        for j in range(0, 15):
-            for k in range(0, 15):
+        for j in range(0, (strati * 2) + 1):
+            for k in range(0, (strati * 2) + 1):
                 b, g, r = img[YposIMG[i] + k, XposIMG[i] + j]
                 blue += b
                 green += g
