@@ -119,7 +119,7 @@ def make_matrix(pp, qq=None):
         pp_to_array(qq))
 
 
-board = read_image("img/TXTCamIMG.jpg")
+board = read_image("img/TXTCamImg.jpg")
 try:
     with open(POS_PICKLE_FILE) as file:
         pp = pickle.load(file)
