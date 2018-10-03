@@ -1,5 +1,5 @@
 import ftrobopy
-from Settings import *
+from settings import *
 import time
 
 
@@ -31,11 +31,11 @@ class Tria:
         while True:
             if input.state() == 1:
                 break
-        if(input == self.asse_x):
+        if(input == self.in_resetx):
             self.asse_x.stop()
-        elif(input == self.asse_y):
+        elif(input == self.in_resety):
             self.asse_y.stop()
-        elif(input == self.asse_z):
+        elif(input == self.in_upz):
             self.asse_z.stop()
 
     def reset(self):
@@ -72,12 +72,14 @@ class Tria:
             else:
                 self.asse_x.setSpeed(-OUTMAX)
             self.asse_x.setDistance(distx)
+            self.txt.incrMotorCmdId(1)
         if diffy != 0:
             if diffy > 0:
                 self.asse_y.setSpeed(-OUTMAX)
             else:
                 self.asse_y.setSpeed(OUTMAX)
             self.asse_y.setDistance(disty)
+            self.txt.incrMotorCmdId(0)
         while not(self.asse_y.finished() and self.asse_x.finished()):
             if time.time() - start >= 30:
                 break

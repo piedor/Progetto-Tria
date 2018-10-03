@@ -121,11 +121,11 @@ def make_matrix(pp, qq=None):
 
 board = read_image("img/TXTCamImg.jpg")
 try:
-    with open(POS_PICKLE_FILE) as file:
+    with open(POS_PICKLE_FILE, "rb") as file:
         pp = pickle.load(file)
 except Exception as e:
     print(e)
-    with open(POS_PICKLE_FILE, "w") as file:
+    with open(POS_PICKLE_FILE, "wb") as file:
         pp = pick_positions(board, count=4)
         pickle.dump(pp, file)
 
