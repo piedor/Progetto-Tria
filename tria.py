@@ -7,6 +7,8 @@ class Tria:
     def __init__(self):
         self.txt = ftrobopy.ftrobopy('auto')
         time.sleep(2)
+        self.txt.startCameraOnline()
+        time.sleep(3)
         self.asse_y = self.txt.motor(1)
         self.asse_x = self.txt.motor(2)
         self.asse_z = self.txt.motor(3)
@@ -18,6 +20,8 @@ class Tria:
         self.in_upz = self.txt.input(6)
         self.in_finemossa = self.txt.input(7)
         self.in_inizioR = self.txt.input(8)
+        self.pos_asse_x = 0
+        self.pos_asse_y = 0
         self.reset()
 
     def muovi_asse(self, asse, verso, dist):
@@ -29,7 +33,7 @@ class Tria:
 
     def aspetta_input(self, input):
         while True:
-            if input.state() == 1:
+            if input.state():
                 break
         if(input == self.in_resetx):
             self.asse_x.stop()
@@ -62,6 +66,8 @@ class Tria:
 
     def fromto(self, x1, y1, x2, y2):
         start = time.time()
+        self.pos_asse_x = x2
+        self.pos_asse_y = y2
         diffx = x2 - x1
         diffy = y2 - y1
         distx = abs(diffx)
@@ -98,6 +104,7 @@ class Tria:
 
     def attendi_utente(self):
         self.lamp.setLevel(OUTMAX)
+        print("Tocca a te")
         self.aspetta_input(self.in_finemossa)
         self.lamp.setLevel(OUTMIN)
 
@@ -108,10 +115,9 @@ class Tria:
         self.release()
 
     def rimuovi_pallina(self, x, y):
-        self.fromto(self.txt.getMotorDistance(
-            2), self.txt.getMotorDistance(1), x, y)
+        self.fromto(self.pos_asse_x, self.pos_asse_y, x, y)
         self.catch()
-        self.fromto(Xpos[Pos], Ypos[Pos], CONTENITOREPVR[0], CONTENITOREPVR[1])
+        self.fromto(x, y, CONTENITOREPVR[0], CONTENITOREPVR[1])
         self.ventosa.setLevel(OUTMIN)
 
     def muovi_pallina(self, x1, y1, x2, y2):
@@ -121,9 +127,6 @@ class Tria:
         self.release()
 
     def scrivi_img_camera(self):
-        self.txt.startCameraOnline()
-        time.sleep(2.5)
         fc = self.txt.getCameraFrame()
         with open(CAM_IMAGE, 'wb') as f:
             f.write(bytearray(fc))
-        self.txt.stopCameraOnline()
