@@ -7,6 +7,10 @@ import cv2
 import math
 import random
 import time
+import pygame
+from pygame.locals import *
+import os
+import sys
 
 val_elem = [0] * 24
 terne = [[0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -21,12 +25,19 @@ vertici = [[0, 23], [2, 21], [3, 20],
 quadrati = [[0, 1, 2, 14, 23, 22, 21, 9], [
     3, 4, 5, 13, 20, 19, 18, 10], [6, 7, 8, 12, 17, 16, 15, 11]]
 connettori = [[1, 4, 7], [14, 13, 12], [22, 19, 16], [9, 10, 11]]
+pygame.init()
+pygame.display.set_caption("Tria")
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+clock = pygame.time.Clock()
+infoDisplay = pygame.display.Info()
+display_width, display_height = infoDisplay.current_w, infoDisplay.current_h
 
 
 class Game():
     def __init__(self):
-        self.Tria = Tria()
-        self.el_camera = ElabCamImg(self.Tria)
+        self.tria = Tria()
+        self.el_camera = ElabCamImg(self.tria)
+        self.gui = Gui(self.tria)
         self.fase = 1
         self.partita_terminata = False
         self.val_terna1_mossa = 0
@@ -45,17 +56,10 @@ class Game():
         self.user_can_mangia = False
 
     def set_init_player(self):
-        print("Chi comincia? Tu(down) Robot(up)")
-        self.Tria.lamp.setLevel(OUTMAX)
-        while True:
-            if self.Tria.in_finemossa.state():
-                self.player = USER
-                break
-            elif self.Tria.in_inizioR.state():
-                self.player = ROBOT
-                break
-        self.Tria.lamp.setLevel(OUTMIN)
-        time.sleep(1)
+        self.tria.lamp.setLevel(OUTMAX)
+        self.gui.set_init_player()
+        self.player = self.gui.player
+        self.tria.lamp.setLevel(OUTMIN)
 
     def change_turn(self):
         if self.player == ROBOT:
@@ -261,7 +265,7 @@ class Game():
         pos_max = self.index_elements(
             val_fase_1, val_max)
         self.pos_definited_mossa = random.choice(pos_max)
-        self.Tria.aggiungi_pallina(
+        self.tria.aggiungi_pallina(
             XPOS[self.pos_definited_mossa], YPOS[self.pos_definited_mossa])
         val_elem[self.pos_definited_mossa] = ROBOT
 
@@ -389,13 +393,13 @@ class Game():
         val_max = max(val_elem_mangiabili)
         pos_max = self.index_elements(val_elem_mangiabili, val_max)
         self.pos_definited_mangiare = random.choice(pos_max)
-        self.Tria.rimuovi_pallina(
+        self.tria.rimuovi_pallina(
             XPOS[self.pos_definited_mangiare], YPOS[self.pos_definited_mangiare])
         val_elem[self.pos_definited_mangiare] = EMPTY
 
     def allow_user_mangia(self):
         print("Puoi mangiare una pallina del robot")
-        self.Tria.attendi_utente()
+        self.tria.attendi_utente()
         self.user_can_mangia = True
         self.controlli_user()
         self.user_can_mangia = False
@@ -440,8 +444,15 @@ class Game():
                         pos_removed_robot_elements,
                         "puoi rimuoverne solo 1 quindi rimetti a posto le altre")
                     errore = True
+                elif len(pos_removed_robot_elements) == 1:
+                    for i in self.trie_robot:
+                        if pos_removed_robot_elements[0] in i:
+                            print(
+                                "Hai rimosso una pallina del robot che fà parte di una tria")
+                            errore = True
+                            break
         if errore:
-            self.Tria.attendi_utente()
+            self.tria.attendi_utente()
             self.el_camera.check_new_or_removed_elements()
             self.controlli_user()
         else:
@@ -460,7 +471,13 @@ class Game():
                 self.elem_user -= 1
             if self.elem_robot == 0 and self.elem_user == 0:
                 self.fase = 2
-                print("fase 2")
+                print("Numero trie robot: ", len(self.trie_robot))
+                print("Numero trie utente: ", len(self.trie_user))
+                if(len(self.trie_robot) > len(self.trie_user)):
+                    print("Ha vinto il robot")
+                else:
+                    print("Ha vinto l'utente")
+                self.partita_terminata = True
 
     def set_partita_terminata(self, value):
         self._partita_terminata = value
@@ -478,7 +495,7 @@ class Game():
                 if self.fase == 1:
                     self.mossa_robot_fase_1()
             elif self.player == USER:
-                self.Tria.attendi_utente()
+                self.tria.attendi_utente()
                 self.el_camera.check_new_or_removed_elements()
                 self.controlli_user()
             if self.b_new_tria():
@@ -486,7 +503,7 @@ class Game():
                     self.mangia_elem_user()
                 else:
                     self.allow_user_mangia()
-            self.Tria.reset()
+            self.tria.reset()
             self.el_camera.val_pos_camera_update()
             self.change_fase()
             self.change_turn()
@@ -500,13 +517,13 @@ class ElabCamImg():
         self.val_pos_camera_g = [0] * 24
         self.val_pos_camera_r = [0] * 24
         self.pos_modified = -1
-        self.Tria = Tria
+        self.tria = Tria
         self.new_elements_user = list()
         self.removed_elements_user = list()
         self.removed_elements_robot = list()
 
     def val_pos_camera_update(self):
-        self.Tria.scrivi_img_camera()
+        self.tria.scrivi_img_camera()
         exec(
             open("align_TXTCamImg.py").read(), globals())
         self.val_pos_camera_b = [
@@ -552,7 +569,7 @@ class ElabCamImg():
         self.new_elements_user = list()
         self.removed_elements_user = list()
         self.removed_elements_robot = list()
-        self.Tria.scrivi_img_camera()
+        self.tria.scrivi_img_camera()
         exec(
             open("align_TXTCamImg.py").read(), globals())
         for i in range(0, 24):
@@ -573,6 +590,128 @@ class ElabCamImg():
                     "pallina robot rimossa dalla posizione ", i)
 
 
+class Gui():
+    def __init__(self, tria):
+        self.tria = tria
+        self.bg = pygame.image.load("img/back.png")
+        self.bg_width, self.bg_height = self.bg.get_size()
+        self.bg_center_x, self.bg_center_y = self.bg_width / 2, self.bg_height / 2
+        self.screen = pygame.display.set_mode(
+            (display_width, display_height), 0, 32)
+        self.surface = pygame.Surface(self.screen.get_size()).convert()
+        self.menu = MAIN_MENU
+        self.index = 0
+        self.text_view_array = list()
+        self.player = 0
+
+    def show_menu(self, dict):
+        TextView(self.surface, display_width /
+                 2, 80, "impact", 80, (255, 0, 0), list(dict.keys())[0])
+        self.text_view_array = list()
+        nArgs = len(dict)
+        if self.index > nArgs - 2:
+            self.index = 0
+        counter = 0
+
+        for i in range(1, len(dict)):
+            if list(dict.values())[i] != "BK":
+                b = TextView(self.surface, display_width /
+                             2, (display_height -
+                                 (nArgs -
+                                  1) *
+                                 100) /
+                             nArgs +
+                             100 *
+                             (counter +
+                                 1), "Verdana", 40, (255, 255, 255), list(dict.keys())[i])
+            else:
+                b = TextView(self.surface, (display_width /
+                                            2) +
+                             300, (display_height -
+                                   (nArgs -
+                                    1) *
+                                   100) /
+                             nArgs +
+                             100 *
+                             (counter +
+                              1) +
+                             250, "Verdana", 40, (255, 255, 255), list(dict.keys())[i])
+            if counter == self.index:
+                b.set_hover()
+            b.set_id(list(dict.values())[i])
+            self.text_view_array.append(b)
+            counter += 1
+
+    def select_listener(self):
+        if self.tria.in_select.state():
+            self.index += 1
+            pygame.time.wait(200)
+
+    def start_listener(self):
+        if self.tria.in_start.state():
+            button_id = self.text_view_array[self.index].get_id()
+            if button_id == "NP":
+                self.menu = INIT_PLAYER_MENU
+            elif button_id == "LN":
+                self.menu = LANGUAGES_MENU
+            elif button_id == "UT":
+                self.player = USER
+            elif button_id == "RT":
+                self.player = ROBOT
+            elif button_id == "BK":
+                self.menu = MAIN_MENU
+            pygame.time.wait(200)
+
+    def set_init_player(self):
+        while not self.player:
+            self.run()
+
+    def run(self):
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+        self.surface.fill((40, 40, 40))
+        self.surface.blit(self.bg,
+                          ((display_width / 2) - (self.bg_width - self.bg_center_x),
+                           (display_height / 2) - (self.bg_height - self.bg_center_y)))
+
+        self.show_menu(self.menu)
+        self.select_listener()
+        self.start_listener()
+        self.screen.blit(self.surface, (0, 0))
+        pygame.display.flip()
+        pygame.display.update()
+        clock.tick(30)
+
+
+class TextView():
+    def __init__(self, surface, posX, posY, font, size, color, text):
+        self.posX = posX
+        self.posY = posY
+        self.font = pygame.font.SysFont(font, size)
+        self.text = text
+        self.color = color
+        self.surface = surface
+        self.id = ""
+        self.show_on_surface(self.color)
+
+    def show_on_surface(self, color):
+        text = self.font.render(self.text, 1, color)
+        textpos = text.get_rect()
+        textpos.centerx = self.posX
+        textpos.centery = self.posY
+        self.surface.blit(text, textpos)
+
+    def set_hover(self):
+        self.show_on_surface((0, 0, 255))
+
+    def set_id(self, id):
+        self.id = id
+
+    def get_id(self):
+        return(self.id)
+
+
 game = Game()
-while True:
-    game.run()
+game.run()

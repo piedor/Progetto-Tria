@@ -18,8 +18,8 @@ class Tria:
         self.in_resetx = self.txt.input(4)
         self.in_downz = self.txt.input(5)
         self.in_upz = self.txt.input(6)
-        self.in_finemossa = self.txt.input(7)
-        self.in_inizioR = self.txt.input(8)
+        self.in_select = self.txt.input(7)
+        self.in_start = self.txt.input(8)
         self.pos_asse_x = 0
         self.pos_asse_y = 0
         self.reset()
@@ -105,7 +105,7 @@ class Tria:
     def attendi_utente(self):
         self.lamp.setLevel(OUTMAX)
         print("Tocca a te")
-        self.aspetta_input(self.in_finemossa)
+        self.aspetta_input(self.in_select)
         self.lamp.setLevel(OUTMIN)
 
     def aggiungi_pallina(self, x, y):

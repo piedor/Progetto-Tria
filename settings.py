@@ -48,3 +48,18 @@ MINDISTNBU = 6000
 MINDISTRBR = 9000
 VAL_TRIA_ROBOT = 111
 VAL_TRIA_USER = 222
+MAIN_MENU = {
+    "Nine Men's Morris": "TT",
+    "Nuova partita": "NP",
+    "Lingua": "LN",
+    "Credits": "CD"}
+INIT_PLAYER_MENU = {
+    "Scegli il giocatore che inizia per primo:": "TT",
+    "UTENTE": "UT",
+    "ROBOT": "RT",
+    "Indietro": "BK"}
+LANGUAGES_MENU = {
+    "Scegli la lingua": "TT",
+    "ITALIANO": "IT",
+    "INGLESE": "EN",
+    "Indietro": "BK"}
