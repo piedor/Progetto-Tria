@@ -6,7 +6,6 @@ from tria import Tria
 import cv2
 import math
 import random
-import time
 import pygame
 from pygame.locals import *
 import os
@@ -38,6 +37,25 @@ class Game():
         self.tria = Tria()
         self.el_camera = ElabCamImg(self.tria)
         self.gui = Gui(self.tria)
+        self.fase = 1
+        self.partita_terminata = False
+        self.val_terna1_mossa = 0
+        self.val_terna2_mossa = 0
+        self.val_terna1_mangiare = 0
+        self.val_terna2_mangiare = 0
+        self.pos_definited_mossa = -1
+        self.pos_definited_mangiare = -1
+        self.player = 0
+        self.pos_libere = list()
+        self.elem_robot = 8
+        self.elem_user = 8
+        self.trie_robot = list()
+        self.trie_user = list()
+        self.val_elem_precedente = [0] * 24
+        self.user_can_mangia = False
+
+    def reset(self):
+        val_elem = val_elem = [0] * 24
         self.fase = 1
         self.partita_terminata = False
         self.val_terna1_mossa = 0
@@ -409,21 +427,22 @@ class Game():
         pos_new_user_elements = list()
         pos_removed_robot_elements = list()
         if self.fase == 1:
-            pos_new_user_elements = self.el_camera.new_elements_user
-            if len(pos_new_user_elements) == 0:
-                self.gui.showInfo("Non hai posizionato alcuna pallina")
-                print("Non hai posizionato alcuna pallina")
-                errore = True
-            elif len(pos_new_user_elements) > 1:
-                self.gui.showInfo("Hai posizionato più palline")
-                print(
-                    "Hai posizionato",
-                    len(pos_new_user_elements),
-                    "palline nelle posizioni:",
-                    pos_new_user_elements,
-                    "rimuovine",
-                    len(pos_new_user_elements) - 1)
-                errore = True
+            if not self.user_can_mangia:
+                pos_new_user_elements = self.el_camera.new_elements_user
+                if len(pos_new_user_elements) == 0:
+                    self.gui.showInfo("Non hai posizionato alcuna pallina")
+                    print("Non hai posizionato alcuna pallina")
+                    errore = True
+                elif len(pos_new_user_elements) > 1:
+                    self.gui.showInfo("Hai posizionato più palline")
+                    print(
+                        "Hai posizionato",
+                        len(pos_new_user_elements),
+                        "palline nelle posizioni:",
+                        pos_new_user_elements,
+                        "rimuovine",
+                        len(pos_new_user_elements) - 1)
+                    errore = True
 
             pos_removed_robot_elements = self.el_camera.removed_elements_robot
             if len(pos_removed_robot_elements) > 0 and not self.user_can_mangia:
@@ -487,7 +506,7 @@ class Game():
                 else:
                     self.gui.showInfo("Ha vinto l'utente")
                     print("Ha vinto l'utente")
-                time.sleep(2000)
+                pygame.time.wait(2000)
                 self.partita_terminata = True
 
     def set_partita_terminata(self, value):
@@ -499,13 +518,13 @@ class Game():
         get_partita_terminata, set_partita_terminata)
 
     def run(self):
-        while true:
+        while True:
+            self.reset()
             self.set_init_player()
             self.el_camera.val_pos_camera_update()
             self.gui.runBoard()
             while not self.partita_terminata:
                 if self.player == ROBOT:
-                    self.gui.showInfo("Robot sta effettuando mossa...")
                     if self.fase == 1:
                         self.mossa_robot_fase_1()
                 elif self.player == USER:
@@ -516,10 +535,12 @@ class Game():
                 if self.b_new_tria():
                     if self.player == ROBOT:
                         self.gui.showInfo("Il robot stà mangiando...")
+                        self.gui.incrementaTrieRobot()
                         self.mangia_elem_user()
                     else:
                         self.gui.showInfo(
                             "Puoi mangiare una pallina del robot")
+                        self.gui.incrementaTrieUtente()
                         self.allow_user_mangia()
                 self.tria.reset()
                 self.el_camera.val_pos_camera_update()
@@ -704,8 +725,8 @@ class Gui():
         self.updateScreen()
 
     def updateBoard(self):
-        TextView(self.surface, 100, 50, "Verdana", 40, (0, 0, 255), "Robot")
-        TextView(self.surface, 300, 50, "Verdana", 40, (0, 0, 255), "Utente")
+        TextView(self.surface, 100, 50, "Verdana", 40, (0, 255, 0), "Robot")
+        TextView(self.surface, 300, 50, "Verdana", 40, (0, 255, 0), "Utente")
         TextView(self.surface, 100, 100, "Verdana", 40,
                  (0, 0, 0), str(self.numeroTrieRobot))
         TextView(self.surface, 300, 100, "Verdana", 40,
