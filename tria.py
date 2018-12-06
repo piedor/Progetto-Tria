@@ -1,14 +1,14 @@
 import ftrobopy
 from settings import *
-import time
+import pygame
 
 
 class Tria:
     def __init__(self):
         self.txt = ftrobopy.ftrobopy('auto')
-        time.sleep(2)
+        pygame.time.wait(2)
         self.txt.startCameraOnline()
-        time.sleep(3)
+        pygame.time.wait(3)
         self.asse_y = self.txt.motor(1)
         self.asse_x = self.txt.motor(2)
         self.asse_z = self.txt.motor(3)
@@ -95,9 +95,9 @@ class Tria:
         start = time.time()
         while True:
             self.lamp.setLevel(OUTMIN)
-            time.sleep(vel)
+            pygame.time.wait(vel)
             self.lamp.setLevel(OUTMAX)
-            time.sleep(vel)
+            pygame.time.wait(vel)
             if time.time() - start >= seconds:
                 self.lamp.setLevel(OUTMIN)
                 break
