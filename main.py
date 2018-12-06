@@ -411,9 +411,11 @@ class Game():
         if self.fase == 1:
             pos_new_user_elements = self.el_camera.new_elements_user
             if len(pos_new_user_elements) == 0:
+                self.gui.showInfo("Non hai posizionato alcuna pallina")
                 print("Non hai posizionato alcuna pallina")
                 errore = True
             elif len(pos_new_user_elements) > 1:
+                self.gui.showInfo("Hai posizionato più palline")
                 print(
                     "Hai posizionato",
                     len(pos_new_user_elements),
@@ -425,6 +427,7 @@ class Game():
 
             pos_removed_robot_elements = self.el_camera.removed_elements_robot
             if len(pos_removed_robot_elements) > 0 and not self.user_can_mangia:
+                self.gui.showInfo("Hai rimosso delle palline del robot")
                 print(
                     "Hai rimosso",
                     len(pos_removed_robot_elements),
@@ -434,9 +437,12 @@ class Game():
                 errore = True
             elif self.user_can_mangia:
                 if len(pos_removed_robot_elements) == 0:
+                    self.gui.showInfo(
+                        "Non hai rimosso alcuna pallina del robot")
                     print("Non hai rimosso alcuna pallina del robot")
                     errore = True
                 elif len(pos_removed_robot_elements) > 1:
+                    self.gui.showInfo("Hai rimosso più palline del robot")
                     print(
                         "Hai rimosso",
                         len(pos_removed_robot_elements),
@@ -447,6 +453,8 @@ class Game():
                 elif len(pos_removed_robot_elements) == 1:
                     for i in self.trie_robot:
                         if pos_removed_robot_elements[0] in i:
+                            self.gui.showInfo(
+                                "Hai rimosso una pallina che fà parte di una tria del robot")
                             print(
                                 "Hai rimosso una pallina del robot che fà parte di una tria")
                             errore = True
@@ -474,9 +482,12 @@ class Game():
                 print("Numero trie robot: ", len(self.trie_robot))
                 print("Numero trie utente: ", len(self.trie_user))
                 if(len(self.trie_robot) > len(self.trie_user)):
+                    self.gui.showInfo("Ha vinto il robot")
                     print("Ha vinto il robot")
                 else:
+                    self.gui.showInfo("Ha vinto l'utente")
                     print("Ha vinto l'utente")
+                time.sleep(2000)
                 self.partita_terminata = True
 
     def set_partita_terminata(self, value):
@@ -488,27 +499,34 @@ class Game():
         get_partita_terminata, set_partita_terminata)
 
     def run(self):
-        self.set_init_player()
-        self.el_camera.val_pos_camera_update()
-        while not self.partita_terminata:
-            if self.player == ROBOT:
-                if self.fase == 1:
-                    self.mossa_robot_fase_1()
-            elif self.player == USER:
-                self.tria.attendi_utente()
-                self.el_camera.check_new_or_removed_elements()
-                self.controlli_user()
-            if self.b_new_tria():
-                if self.player == ROBOT:
-                    self.mangia_elem_user()
-                else:
-                    self.allow_user_mangia()
-            self.tria.reset()
+        while true:
+            self.set_init_player()
             self.el_camera.val_pos_camera_update()
-            self.change_fase()
-            self.change_turn()
-            for i in range(0, 24):
-                self.val_elem_precedente[i] = val_elem[i]
+            self.gui.runBoard()
+            while not self.partita_terminata:
+                if self.player == ROBOT:
+                    self.gui.showInfo("Robot sta effettuando mossa...")
+                    if self.fase == 1:
+                        self.mossa_robot_fase_1()
+                elif self.player == USER:
+                    self.gui.showInfo("Tocca a te!")
+                    self.tria.attendi_utente()
+                    self.el_camera.check_new_or_removed_elements()
+                    self.controlli_user()
+                if self.b_new_tria():
+                    if self.player == ROBOT:
+                        self.gui.showInfo("Il robot stà mangiando...")
+                        self.mangia_elem_user()
+                    else:
+                        self.gui.showInfo(
+                            "Puoi mangiare una pallina del robot")
+                        self.allow_user_mangia()
+                self.tria.reset()
+                self.el_camera.val_pos_camera_update()
+                self.change_fase()
+                self.change_turn()
+                for i in range(0, 24):
+                    self.val_elem_precedente[i] = val_elem[i]
 
 
 class ElabCamImg():
@@ -594,8 +612,13 @@ class Gui():
     def __init__(self, tria):
         self.tria = tria
         self.bg = pygame.image.load("img/back.png")
+        self.bgBoard = pygame.image.load("img/back2.png")
+        self.bgBoard = pygame.transform.scale(self.bgBoard, (2000, 1000))
         self.bg_width, self.bg_height = self.bg.get_size()
+        self.bgBoard_width, self.bgBoard_height = self.bgBoard.get_size()
         self.bg_center_x, self.bg_center_y = self.bg_width / 2, self.bg_height / 2
+        self.bgBoard_center_x, self.bgBoard_center_y = self.bgBoard_width / \
+            2, self.bgBoard_height / 2
         self.screen = pygame.display.set_mode(
             (display_width, display_height), 0, 32)
         self.surface = pygame.Surface(self.screen.get_size()).convert()
@@ -603,6 +626,14 @@ class Gui():
         self.index = 0
         self.text_view_array = list()
         self.player = 0
+        self.numeroTrieRobot = 0
+        self.numeroTrieUtente = 0
+
+    def incrementaTrieRobot(self):
+        self.numeroTrieRobot += 1
+
+    def incrementaTrieUtente(self):
+        self.numeroTrieUtente += 1
 
     def show_menu(self, dict):
         TextView(self.surface, display_width /
@@ -664,13 +695,30 @@ class Gui():
 
     def set_init_player(self):
         while not self.player:
-            self.run()
+            self.runMenu()
 
-    def run(self):
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
+    def showInfo(self, text):
+        self.surface.fill((0, 0, 0))
+        TextView(self.surface, display_width / 2, display_height /
+                 2, "Verdana", 40, (255, 255, 255), text)
+        self.updateScreen()
+
+    def updateBoard(self):
+        TextView(self.surface, 100, 50, "Verdana", 40, (0, 0, 255), "Robot")
+        TextView(self.surface, 300, 50, "Verdana", 40, (0, 0, 255), "Utente")
+        TextView(self.surface, 100, 100, "Verdana", 40,
+                 (0, 0, 0), str(self.numeroTrieRobot))
+        TextView(self.surface, 300, 100, "Verdana", 40,
+                 (0, 0, 0), str(self.numeroTrieUtente))
+        for i in range(0, 24):
+            if val_elem[i] == ROBOT:
+                pygame.draw.circle(
+                    self.surface, (105, 105, 105), (XPOSBOARD[i], YPOSBOARD[i]), 20)
+            elif val_elem[i] == USER:
+                pygame.draw.circle(
+                    self.surface, (0, 0, 255), (XPOSBOARD[i], YPOSBOARD[i]), 20)
+
+    def runMenu(self):
         self.surface.fill((40, 40, 40))
         self.surface.blit(self.bg,
                           ((display_width / 2) - (self.bg_width - self.bg_center_x),
@@ -679,6 +727,29 @@ class Gui():
         self.show_menu(self.menu)
         self.select_listener()
         self.start_listener()
+        self.updateScreen()
+
+    def runBoard(self):
+        self.surface.fill((255, 255, 255))
+        self.surface.blit(self.bgBoard, ((display_width /
+                                          2) -
+                                         (self.bgBoard_width -
+                                          self.bgBoard_center_x), (display_height /
+                                                                   2) -
+                                         (self.bgBoard_height -
+                                          self.bgBoard_center_y)))
+
+        self.surface.blit(self.bg,
+                          ((display_width / 2) - (self.bg_width - self.bg_center_x),
+                           (display_height / 2) - (self.bg_height - self.bg_center_y)))
+        self.updateBoard()
+        self.updateScreen()
+
+    def updateScreen(self):
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
         self.screen.blit(self.surface, (0, 0))
         pygame.display.flip()
         pygame.display.update()
