@@ -33,29 +33,9 @@ display_width, display_height = infoDisplay.current_w, infoDisplay.current_h
 
 
 class Game():
-    def __init__(self):
-        self.tria = Tria()
-        self.el_camera = ElabCamImg(self.tria)
+    def __init__(self,tria):
+        self.tria = tria
         self.gui = Gui(self.tria)
-        self.fase = 1
-        self.partita_terminata = False
-        self.val_terna1_mossa = 0
-        self.val_terna2_mossa = 0
-        self.val_terna1_mangiare = 0
-        self.val_terna2_mangiare = 0
-        self.pos_definited_mossa = -1
-        self.pos_definited_mangiare = -1
-        self.player = 0
-        self.pos_libere = list()
-        self.elem_robot = 8
-        self.elem_user = 8
-        self.trie_robot = list()
-        self.trie_user = list()
-        self.val_elem_precedente = [0] * 24
-        self.user_can_mangia = False
-
-    def reset(self):
-        val_elem = val_elem = [0] * 24
         self.fase = 1
         self.partita_terminata = False
         self.val_terna1_mossa = 0
@@ -503,9 +483,11 @@ class Game():
                 if(len(self.trie_robot) > len(self.trie_user)):
                     self.gui.showInfo("Ha vinto il robot")
                     print("Ha vinto il robot")
-                else:
+                elif (len(self.trie_user) > len(self.trie_robot)):
                     self.gui.showInfo("Ha vinto l'utente")
                     print("Ha vinto l'utente")
+                else:
+                    self.gui.showInfo("pareggio")
                 pygame.time.wait(2000)
                 self.partita_terminata = True
 
@@ -518,36 +500,38 @@ class Game():
         get_partita_terminata, set_partita_terminata)
 
     def run(self):
-        while True:
-            self.reset()
-            self.set_init_player()
+        self.set_init_player()
+        for i in range(0,24):
+            val_elem[i]=EMPTY
+        self.el_camera = ElabCamImg(self.tria)
+        self.el_camera.val_pos_camera_update()
+        self.gui.runBoard()
+        while not self.partita_terminata:
+            if self.player == ROBOT:
+                if self.fase == 1:
+                    self.mossa_robot_fase_1()
+            elif self.player == USER:
+                self.gui.showInfo("Tocca a te!")
+                self.tria.attendi_utente()
+                self.el_camera.check_new_or_removed_elements()
+                self.controlli_user()
+            self.tria.reset()
             self.el_camera.val_pos_camera_update()
-            self.gui.runBoard()
-            while not self.partita_terminata:
+            if self.b_new_tria():
                 if self.player == ROBOT:
-                    if self.fase == 1:
-                        self.mossa_robot_fase_1()
-                elif self.player == USER:
-                    self.gui.showInfo("Tocca a te!")
-                    self.tria.attendi_utente()
-                    self.el_camera.check_new_or_removed_elements()
-                    self.controlli_user()
-                if self.b_new_tria():
-                    if self.player == ROBOT:
-                        self.gui.showInfo("Il robot stà mangiando...")
-                        self.gui.incrementaTrieRobot()
-                        self.mangia_elem_user()
-                    else:
-                        self.gui.showInfo(
-                            "Puoi mangiare una pallina del robot")
-                        self.gui.incrementaTrieUtente()
-                        self.allow_user_mangia()
-                self.tria.reset()
-                self.el_camera.val_pos_camera_update()
-                self.change_fase()
-                self.change_turn()
-                for i in range(0, 24):
-                    self.val_elem_precedente[i] = val_elem[i]
+                    self.gui.showInfo("Il robot stà mangiando...")
+                    self.gui.incrementaTrieRobot()
+                    self.mangia_elem_user()
+                else:
+                    self.gui.showInfo(
+                        "Puoi mangiare una pallina del robot")
+                    self.gui.incrementaTrieUtente()
+                    self.allow_user_mangia()
+            self.change_fase()
+            self.change_turn()
+            for i in range(0, 24):
+                self.val_elem_precedente[i] = val_elem[i]
+            self.gui.runBoard()
 
 
 class ElabCamImg():
@@ -675,7 +659,7 @@ class Gui():
                              nArgs +
                              100 *
                              (counter +
-                                 1), "Verdana", 40, (255, 255, 255), list(dict.keys())[i])
+                                 1), "Verdana", 40, (0, 0, 255), list(dict.keys())[i])
             else:
                 b = TextView(self.surface, (display_width /
                                             2) +
@@ -687,7 +671,7 @@ class Gui():
                              100 *
                              (counter +
                               1) +
-                             250, "Verdana", 40, (255, 255, 255), list(dict.keys())[i])
+                             250, "Verdana", 40, (0, 0, 255), list(dict.keys())[i])
             if counter == self.index:
                 b.set_hover()
             b.set_id(list(dict.values())[i])
@@ -725,8 +709,8 @@ class Gui():
         self.updateScreen()
 
     def updateBoard(self):
-        TextView(self.surface, 100, 50, "Verdana", 40, (0, 255, 0), "Robot")
-        TextView(self.surface, 300, 50, "Verdana", 40, (0, 255, 0), "Utente")
+        TextView(self.surface, 100, 50, "Verdana", 40, (255, 0, 0), "Robot")
+        TextView(self.surface, 300, 50, "Verdana", 40, (255, 0, 0), "Utente")
         TextView(self.surface, 100, 100, "Verdana", 40,
                  (0, 0, 0), str(self.numeroTrieRobot))
         TextView(self.surface, 300, 100, "Verdana", 40,
@@ -796,7 +780,7 @@ class TextView():
         self.surface.blit(text, textpos)
 
     def set_hover(self):
-        self.show_on_surface((0, 0, 255))
+        self.show_on_surface((255, 255, 255))
 
     def set_id(self, id):
         self.id = id
@@ -804,6 +788,7 @@ class TextView():
     def get_id(self):
         return(self.id)
 
-
-game = Game()
-game.run()
+tria=Tria()
+while True:
+    game = Game(tria)
+    game.run()
