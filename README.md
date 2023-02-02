@@ -1,9 +1,6 @@
 # Progetto-Tria(in development)
 Nine men's morris game realized with fischertechnik and programmed in python language with ftrobopy library in the robotic laboratory of Marie Curie Istitute.
 
-The software part includes the main program main.py that use some particular algorithms for the game and a artificial intelligence for the ball recognition 
-through the TXT Camera.
-
 # Requirements
   * Python > 3.0
   * Ftrobopy library
